@@ -249,13 +249,14 @@ assets.bossAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/hea
 const MAPS = [
     { n: "The Fuzzy Forest", m: [[1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,1],[1,1,1,1,0,1,0,1],[1,0,0,0,0,1,0,1],[1,1,1,1,0,1,0,1],[1,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1]], start: [1.5,1.5], enemies: [{x:6.5,y:1.5,e:"BEAR"},{x:4.5,y:5.5,e:"SMALL"}], colors:["#FF80AB","#F48FB1"] },
     { n: "The Velvet Vaults", m: [[1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,1],[1,0,1,0,1,1,0,1],[1,0,1,0,0,0,0,1],[1,0,1,1,1,1,0,1],[1,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1]], start: [1.5,5.5], enemies: [{x:3.5,y:3.3,e:"PRED"},{x:1.5,y:1.5,e:"SMALL"}], colors:["#CE93D8","#BA68C8"] },
-    { n: "The Velvet Gauntlet", m: [[1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,1,1,1,1,1,1,1,1,1]], start: [1.5,1.5], enemies: [{x:3.5,y:1.5,e:"PRED"},{x:5.5,y:3.5,e:"PRED"},{x:7.5,y:1.5,e:"PRED"}], colors:["#9575CD","#7E57C2"] },
-    { n: "Sugar Sanctuary", m: [[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]], start: [2.5,2.5], enemies: [{x:1.5,y:1.5,e:"🐘"},{x:3.5,y:1.5,e:"🐘"},{x:2.5,y:1.5,e:"🍰",pickup:true}], colors:["#F8BBD0","#F06292"], isSecret:true },
+    { n: "The Velvet Gauntlet", m: [[1,1,1,1,1,1,1,1,1],[1,0,0,0,1,0,0,0,1],[1,0,1,0,1,0,1,0,1],[1,0,1,0,0,0,1,0,1],[1,1,1,1,1,1,1,1,1]], start: [1.5,1.5], enemies: [{x:3.5,y:1.5,e:"PRED"},{x:5.5,y:3.5,e:"PRED"},{x:7.5,y:1.5,e:"PRED"}], colors:["#9575CD","#7E57C2"] },
+    { n: "Sugar Sanctuary", m: [[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1]], start: [2.5,2.1], enemies: [{x:1.5,y:1.5,e:"🐘"},{x:3.5,y:1.5,e:"🐘"},{x:2.5,y:1.5,e:"🍰",pickup:true}], colors:["#F8BBD0","#F06292"], isSecret:true },
     { n: "The Starry Summit", m: [[1,1,1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,1],[1,0,0,0,0,0,0,0,0,1],[1,1,1,1,1,1,1,1,1,1]], start: [1.5,2.5], boss: {x:8,y:2.5,e:"BOSS_FINAL"}, colors:["#4FC3F7","#29B6F6"] }
 ];
 
 let levelIdx = 0, player, sprites = [], projectiles = [], particles = [], keys = {}, zBuf = new Array(400);
 let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, isLoading = false, maxMultSeen = 1;
+let levelTransitioning = false; // Safety lock for transitions
 
 function startGame() {
     document.getElementById('start-menu').style.display = 'none';
@@ -265,16 +266,22 @@ function startGame() {
 
 function initGame() {
     player = { x: 0, y: 0, dir: 0, hp: 15, score: 0, combo: 0, mult: 1 };
-    levelIdx = 0; gameActive = true; particles = []; isLoading = false; maxMultSeen = 1;
+    levelIdx = 0; gameActive = true; particles = []; isLoading = false; maxMultSeen = 1; levelTransitioning = false;
     document.getElementById('overlay').style.display = 'none';
     loadLevel(0);
 }
 
 function loadLevel(idx) {
-    if (isLoading) return;
+    if (levelTransitioning || idx >= MAPS.length) return;
+    levelTransitioning = true;
     isLoading = true;
+    
     levelIdx = idx; const l = MAPS[idx];
-    player.x = l.start[0]; player.y = l.start[1];
+    
+    // Explicit position reset to new map start
+    player.x = l.start[0]; 
+    player.y = l.start[1];
+    
     sprites = (l.enemies || []).map(e => ({...e, hp: 3, alive: true, lastShot: Date.now() + 2000, atkTimer: 0}));
     if (l.boss) sprites.push({...l.boss, hp: 12, alive: true, type: 'boss', lastShot: Date.now(), atkTimer: 0, strafeDir: 1, strafeTimer: 0});
     
@@ -288,7 +295,12 @@ function loadLevel(idx) {
     }
     projectiles = []; particles = [];
     showLevelCard(l.n, l.isSecret ? "SECRET FOUND!" : "LEVEL " + (idx + 1));
-    setTimeout(() => { isLoading = false; }, 100);
+    
+    // Lock duration to allow assets and coordinates to settle
+    setTimeout(() => { 
+        isLoading = false; 
+        levelTransitioning = false;
+    }, 500);
 }
 
 function showLevelCard(name, sub) {
@@ -312,7 +324,7 @@ window.onkeyup = e => keys[e.code] = false;
 document.getElementById('btn-boop').onclick = doBoop;
 
 function doBoop() {
-    if (!gameActive || attackAnim > 0) return;
+    if (!gameActive || attackAnim > 0 || isLoading) return;
     attackAnim = 1.0;
     for(let i=0; i<15; i++) {
         let ang = (player.dir - 0.2) + Math.random() * 0.4;
@@ -345,12 +357,19 @@ function spawnParticles(x, y, char, count) {
 }
 
 function checkWin() {
-    if (!sprites.some(s => s.alive && !s.pickup && s.e !== "🌀")) {
+    const enemiesRemaining = sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
+    if (!enemiesRemaining) {
         if (MAPS[levelIdx].isSecret) {
+            // Portal logic: Enable transition tile and visual sprite
             MAPS[levelIdx].m[2][2] = 9;
-            sprites.push({x: 2.5, y: 1.5, e: "🌀", alive: true, scale: 2.0});
-        } else if (levelIdx < MAPS.length - 1) loadLevel(++levelIdx);
-        else showEnd("VICTORY! 🏆");
+            if (!sprites.some(s => s.e === "🌀")) {
+                sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
+            }
+        } else if (levelIdx < MAPS.length - 1 && levelIdx !== 3) {
+             loadLevel(++levelIdx);
+        } else if (levelIdx === 4) {
+             showEnd("VICTORY! 🏆");
+        }
     }
 }
 
@@ -396,7 +415,7 @@ function showEnd(msg) {
 document.getElementById('retry-btn').onclick = initGame;
 
 function update() {
-    if (!gameActive) return;
+    if (!gameActive || isLoading) return;
     if (attackAnim > 0) attackAnim -= 0.1;
     if (shake > 0) shake -= 0.1;
     let isSprinting = keys['ShiftLeft'] && player.score > 0;
@@ -409,20 +428,30 @@ function update() {
 
     const canMove = (x, y) => {
         let nx = Math.floor(x), ny = Math.floor(y);
-        if (map[ny] && map[ny][nx] === 9) { 
-            if (!isLoading) {
-                if(levelIdx === 2) loadLevel(3); 
-                else if(levelIdx === 3) loadLevel(4); 
-                else loadLevel(2); 
+        if (!map[ny] || map[ny][nx] === undefined) return false;
+        
+        // Navigation Tile 9 Fix: Gate entrance with enemy check
+        if (map[ny][nx] === 9) { 
+            const enemiesLeft = sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
+            if (!enemiesLeft && !levelTransitioning) {
+                if(levelIdx === 2) loadLevel(3); // Exit Gauntlet -> Secret Sanctuary
+                else if(levelIdx === 3) loadLevel(4); // Exit Sanctuary -> Boss
+                else loadLevel(2);
             }
             return false; 
         }
-        return map[ny] && map[ny][nx] === 0;
+        return map[ny][nx] === 0;
     };
 
     isMoving = false;
-    if (keys['KeyW']) { if(canMove(player.x+dx, player.y)) player.x+=dx; if(canMove(player.x, player.y+dy)) player.y+=dy; isMoving = true; }
-    if (keys['KeyS']) { if(canMove(player.x-dx, player.y)) player.x-=dx; if(canMove(player.x, player.y+dy)) player.y-=dy; isMoving = true; }
+    if (keys['KeyW']) { 
+        if(canMove(player.x+dx, player.y)) { player.x+=dx; isMoving = true; }
+        if(canMove(player.x, player.y+dy)) { player.y+=dy; isMoving = true; }
+    }
+    if (keys['KeyS']) { 
+        if(canMove(player.x-dx, player.y)) { player.x-=dx; isMoving = true; }
+        if(canMove(player.x, player.y-dy)) { player.y-=dy; isMoving = true; }
+    }
 
     if (isMoving) bob += isSprinting ? 0.25 : 0.15; else bob = Math.max(0, bob - 0.1);
     vignette.style.opacity = player.hp <= 5 ? (0.4 + Math.sin(Date.now() * 0.05) * 0.4) : 0;
@@ -451,13 +480,11 @@ function update() {
         if (s.pickup && d < 0.6) { s.alive = false; player.hp = Math.min(45, player.hp + 5); checkWin(); }
         
         if (s.type === 'boss') {
-            // New Strafe behavior: Move up and down (Y axis) while staying at a distance
             s.strafeTimer++;
             if(s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
             let sy = s.y + (s.strafeDir * 0.035);
             if(canMove(s.x, sy)) s.y = sy;
             
-            // Double firing rate (2000ms instead of 4000ms)
             if (d < 12 && Date.now() - s.lastShot > 2000) {
                 let a = Math.atan2(player.y-s.y, player.x-s.x);
                 projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*.09, vy:Math.sin(a)*.09, l:150});
