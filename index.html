@@ -6,7 +6,16 @@
     <title>SFWDOOM: Plushie Edition</title>
     <style>
         :root { --pink: #ff69b4; --hot-pink: #ff1493; --sky: #4fc3f7; --purple: #9575CD; --gold: #ffd700; }
-        body { margin: 0; background: #1a1a1a; overflow: hidden; font-family: 'Arial Rounded MT Bold', sans-serif; touch-action: none; }
+        
+        body { 
+            margin: 0; 
+            background: #1a1a1a; 
+            overflow: hidden; 
+            font-family: 'Arial Rounded MT Bold', sans-serif; 
+            touch-action: none; 
+            -webkit-user-select: none;
+            user-select: none;
+        }
         
         #start-menu { 
             position: fixed; 
@@ -43,7 +52,18 @@
         #minimap-container { position: absolute; top: 10px; right: 10px; width: 80px; height: 80px; background: rgba(0,0,0,0.6); border: 2px solid var(--pink); border-radius: 8px; overflow: hidden; }
         #m-canvas { width: 100%; height: 100%; }
 
-        #ui { height: 50vh; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; padding: 10px; box-sizing: border-box; }
+        #ui { 
+            height: 50vh; 
+            background: #fff; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: space-evenly; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            -webkit-touch-callout: none;
+        }
+        
         #hud { display: flex; flex-direction: column; align-items: center; background: #fff0f5; padding: 10px 20px; border-radius: 20px; border: 2px solid #ffb6c1; width: 90%; max-width: 450px; }
         #stats-bar { display: flex; width: 100%; justify-content: space-between; align-items: center; font-weight: bold; color: var(--hot-pink); margin-bottom: 5px; font-size: 14px; }
         #combo-meter { width: 100%; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
@@ -51,7 +71,19 @@
         
         #controls { display: flex; width: 100%; max-width: 500px; justify-content: space-around; align-items: center; }
         .d-pad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 5px; }
-        .btn { background: #ffb6c1; border: none; border-radius: 10px; font-size: 20px; color: white; box-shadow: 0 4px #d88191; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        
+        .btn { 
+            background: #ffb6c1; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 20px; 
+            color: white; 
+            box-shadow: 0 4px #d88191; 
+            cursor: pointer; 
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none; 
+            user-select: none;
+        }
         .btn:active { transform: translateY(2px); box-shadow: 0 2px #d88191; }
         
         #btn-boop { width: 90px; height: 90px; background: var(--hot-pink); border-radius: 50%; font-size: 14px; font-weight: bold; border: 4px solid #fff; box-shadow: 0 6px #a30b5d; }
@@ -109,7 +141,6 @@ const mCanvas = document.getElementById('m-canvas'), mCtx = mCanvas.getContext('
 const vignette = document.getElementById('vignette');
 canvas.width = 400; canvas.height = 300; mCanvas.width = 80; mCanvas.height = 80;
 
-// Asset Loading
 const assets = {
     bearIdle: new Image(), bearAtk: new Image(),
     smallIdle: new Image(), smallAtk: new Image(),
@@ -138,6 +169,9 @@ const MAPS = [
 
 let levelIdx = 0, player, sprites = [], projectiles = [], particles = [], keys = {}, zBuf = new Array(400);
 let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, isLoading = false;
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
 function startGame() {
     document.getElementById('start-menu').style.display = 'none';
@@ -185,6 +219,7 @@ const bind = (id, k) => {
     const stop = (e) => { e.preventDefault(); keys[k] = false; };
     const start = (e) => { e.preventDefault(); keys[k] = true; };
     el.addEventListener('pointerdown', start); el.addEventListener('pointerup', stop);
+    el.addEventListener('pointerleave', stop);
 };
 [['up','KeyW'],['down','KeyS'],['left','KeyA'],['right','KeyD'],['btn-sprint','ShiftLeft']].forEach(p => bind(p[0], p[1]));
 
@@ -364,10 +399,33 @@ function draw() {
 }
 
 function drawMinimap() {
-    mCtx.clearRect(0,0,80,80); const map = MAPS[levelIdx].m, cw = 80 / map[0].length, ch = 80 / map.length;
+    mCtx.clearRect(0,0,80,80); 
+    const map = MAPS[levelIdx].m, cw = 80 / map[0].length, ch = 80 / map.length;
+    
+    // Draw walls
     mCtx.fillStyle = "rgba(255,255,255,0.2)";
     for(let y=0; y<map.length; y++) for(let x=0; x<map[y].length; x++) if(map[y][x]) mCtx.fillRect(x*cw, y*ch, cw, ch);
-    sprites.forEach(s => { if(s.alive) { mCtx.fillStyle = s.pickup ? "cyan" : "yellow"; mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2, 0, Math.PI*2); mCtx.fill(); }});
+    
+    // Draw enemies in RED and Pickups/Portals in CYAN
+    sprites.forEach(s => { 
+        if(s.alive) { 
+            mCtx.fillStyle = (s.pickup || s.e === "🌀") ? "cyan" : "#ff4444"; 
+            mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2, 0, Math.PI*2); mCtx.fill(); 
+        }
+    });
+
+    // Draw Player in GREEN
+    mCtx.fillStyle = "#44ff44";
+    mCtx.beginPath();
+    mCtx.arc(player.x*cw, player.y*ch, 3, 0, Math.PI*2);
+    mCtx.fill();
+
+    // Draw player direction indicator
+    mCtx.strokeStyle = "#44ff44";
+    mCtx.beginPath();
+    mCtx.moveTo(player.x*cw, player.y*ch);
+    mCtx.lineTo((player.x + Math.cos(player.dir)*0.8)*cw, (player.y + Math.sin(player.dir)*0.8)*ch);
+    mCtx.stroke();
 }
 
 function loop() { if(gameActive) { update(); draw(); } requestAnimationFrame(loop); }
