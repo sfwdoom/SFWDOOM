@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <title>SFWDOOM: Plushie Edition</title>
     <meta name="description" content="Enter the forest and start your Plushie Quest in this retro raycasting adventure!">
 
@@ -30,7 +29,7 @@
         #start-menu { 
             position: fixed; 
             inset: 0; 
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
                         url('https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image-10-1.jpg');
             background-size: cover;
             background-position: center;
@@ -43,133 +42,141 @@
         }
 
         .logo-container { text-align: center; margin-bottom: 40px; pointer-events: none; }
-        .logo-main { font-size: 64px; font-weight: 900; letter-spacing: -2px; color: var(--hot-pink); text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); margin: 0; }
-        .logo-sub { font-size: 18px; color: var(--sky); letter-spacing: 4px; text-transform: uppercase; margin: 0; }
+        .logo-main { 
+            font-size: 64px; 
+            font-weight: 900; 
+            letter-spacing: -2px; 
+            color: var(--hot-pink); 
+            text-shadow: 0 0 30px rgba(255, 20, 147, 0.8), 0 0 60px rgba(255, 20, 147, 0.4); 
+            margin: 0; 
+        }
+        .logo-sub { 
+            font-size: 18px; 
+            color: var(--sky); 
+            letter-spacing: 6px; 
+            text-transform: uppercase; 
+            margin: 0; 
+            text-shadow: 0 0 15px var(--sky);
+        }
         
-        .start-btn { padding: 20px 60px; font-size: 24px; background: var(--hot-pink); color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px #a30b5d; transition: transform 0.1s; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .start-btn { 
+            padding: 20px 60px; 
+            font-size: 24px; 
+            background: var(--hot-pink); 
+            color: white; 
+            border: none; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            box-shadow: 0 8px #a30b5d, 0 0 25px var(--hot-pink); 
+            transition: all 0.1s; 
+            animation: pulse 1.5s infinite; 
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+        .start-btn:active { transform: scale(0.92); }
 
         #viewport { position: relative; width: 100vw; height: 50vh; background: #000; border-bottom: 4px solid var(--pink); overflow: hidden; }
         canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
         
-        #vignette { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, transparent 40%, rgba(255, 0, 0, 0.4) 100%); transition: opacity 0.3s; z-index: 5; }
+        #vignette { 
+            position: absolute; inset: 0; pointer-events: none; 
+            opacity: 0; 
+            background: radial-gradient(circle, transparent 35%, rgba(255, 20, 147, 0.45) 100%); 
+            transition: opacity 0.3s; 
+            z-index: 5; 
+        }
 
-        #level-card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: opacity 0.8s; z-index: 10; }
-        #level-card h2 { color: white; font-size: 24px; text-shadow: 0 0 10px var(--hot-pink), 0 0 20px black; margin: 0; }
-        #level-card p { color: var(--pink); font-size: 14px; text-transform: uppercase; letter-spacing: 2px; margin-top: 5px; }
+        #level-card { 
+            position: absolute; inset: 0; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            pointer-events: none; opacity: 0; transition: opacity 0.8s; z-index: 10; 
+        }
+        #level-card h2 { 
+            color: white; font-size: 26px; 
+            text-shadow: 0 0 15px var(--hot-pink), 0 0 30px black; margin: 0; 
+        }
+        #level-card p { 
+            color: var(--pink); font-size: 15px; text-transform: uppercase; letter-spacing: 3px; margin-top: 8px; 
+        }
 
-        #minimap-container { position: absolute; top: 10px; right: 10px; width: 80px; height: 80px; background: rgba(0,0,0,0.6); border: 2px solid var(--pink); border-radius: 8px; overflow: hidden; }
+        #minimap-container { 
+            position: absolute; top: 10px; right: 10px; width: 80px; height: 80px; 
+            background: rgba(0,0,0,0.7); border: 3px solid var(--pink); border-radius: 10px; overflow: hidden; 
+        }
         #m-canvas { width: 100%; height: 100%; }
 
         #face-hud { 
-            position: absolute; 
-            top: 95px; 
-            right: 10px; 
-            width: 80px; 
-            height: 80px; 
-            background: rgba(255, 182, 193, 0.3); 
-            border: 2px solid var(--pink); 
-            border-radius: 8px; 
-            overflow: hidden; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+            position: absolute; top: 95px; right: 10px; width: 80px; height: 80px; 
+            background: rgba(255, 182, 193, 0.35); border: 3px solid var(--pink); border-radius: 10px; 
+            overflow: hidden; display: flex; align-items: center; justify-content: center; 
         }
         #player-face { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
         #ui { 
             height: 50vh; 
             background: radial-gradient(circle at 20px 20px, #2d1b2e 2px, transparent 0) 0 0 / 40px 40px, #1e121f; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: space-evenly; 
-            padding: 15px; 
-            box-sizing: border-box; 
-            border-top: 5px solid var(--hot-pink);
-            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; 
+            padding: 15px; box-sizing: border-box; border-top: 6px solid var(--hot-pink);
         }
         
         #hud { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            background: rgba(0, 0, 0, 0.6); 
-            padding: 15px; 
-            border-radius: 15px; 
-            border: 2px solid var(--pink); 
-            width: 90%; 
-            max-width: 450px; 
-            box-shadow: 0 0 15px var(--hot-pink);
-            backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center; 
+            background: rgba(0, 0, 0, 0.65); padding: 15px; border-radius: 15px; 
+            border: 3px solid var(--pink); width: 90%; max-width: 460px; 
+            box-shadow: 0 0 20px var(--hot-pink); backdrop-filter: blur(6px);
         }
 
         #stats-bar { 
-            display: flex; 
-            width: 100%; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-family: 'Courier New', monospace; 
-            font-weight: 900; 
-            color: #fff; 
-            text-shadow: 0 0 8px var(--hot-pink);
-            margin-bottom: 10px; 
-            font-size: 14px;
+            display: flex; width: 100%; justify-content: space-between; align-items: center; 
+            font-family: 'Courier New', monospace; font-weight: 900; color: #fff; 
+            text-shadow: 0 0 10px var(--hot-pink); margin-bottom: 10px; font-size: 15px;
         }
 
-        #combo-meter { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border: 1px solid var(--sky); border-radius: 6px; overflow: hidden; }
-        #combo-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--sky), var(--hot-pink)); box-shadow: 0 0 10px var(--hot-pink); transition: width 0.1s linear; }
+        #combo-meter { width: 100%; height: 14px; background: rgba(255,255,255,0.1); border: 2px solid var(--sky); border-radius: 8px; overflow: hidden; }
+        #combo-fill { 
+            height: 100%; width: 0%; 
+            background: linear-gradient(90deg, var(--sky), var(--hot-pink)); 
+            box-shadow: 0 0 15px var(--hot-pink); transition: width 0.1s linear; 
+        }
         
-        #controls { display: flex; width: 100%; max-width: 500px; justify-content: space-around; align-items: center; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 8px; }
+        #controls { display: flex; width: 100%; max-width: 520px; justify-content: space-around; align-items: center; }
+        .d-pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 8px; }
         
         .btn { 
             background: linear-gradient(145deg, #ff85c0, #d88191); 
-            border: 2px solid #fff; 
+            border: 3px solid #fff; 
             border-radius: 15px; 
-            font-size: 22px; 
+            font-size: 24px; 
             color: white; 
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.3), inset -2px -2px 5px rgba(0,0,0,0.2); 
+            box-shadow: 6px 6px 15px rgba(0,0,0,0.4), inset -3px -3px 8px rgba(0,0,0,0.3); 
             cursor: pointer; 
-            transition: all 0.1s ease;
+            transition: all 0.08s ease;
             touch-action: none;
         }
-        .btn:active { transform: scale(0.95); box-shadow: 2px 2px 5px rgba(0,0,0,0.5); background: var(--hot-pink); }
+        .btn:active { transform: scale(0.92); box-shadow: 2px 2px 8px rgba(0,0,0,0.6); background: var(--hot-pink); }
         
         #btn-boop { 
-            width: 100px; 
-            height: 100px; 
+            width: 110px; height: 110px; 
             background: radial-gradient(circle, var(--hot-pink), #a30b5d); 
-            border-radius: 50%; 
-            font-size: 14px; 
-            font-weight: bold; 
-            text-transform: uppercase;
-            border: 4px solid #fff; 
-            box-shadow: 0 0 20px var(--hot-pink);
+            border-radius: 50%; font-size: 15px; font-weight: bold; text-transform: uppercase;
+            border: 5px solid #fff; box-shadow: 0 0 25px var(--hot-pink);
         }
+        #btn-sprint { width: 70px; height: 70px; background: linear-gradient(145deg, var(--sky), #0288d1); border-radius: 50%; border: 3px solid #fff; font-size: 28px; }
 
-        #btn-sprint { width: 65px; height: 65px; background: linear-gradient(145deg, var(--sky), #0288d1); border-radius: 50%; border: 2px solid #fff; font-size: 24px; }
-        
         .overlay { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            background: radial-gradient(circle, rgba(45, 27, 46, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%); 
-            z-index: 100; 
-            color: white; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            text-align: center; 
-            backdrop-filter: blur(10px);
-            border: 4px solid var(--hot-pink);
-            box-shadow: inset 0 0 50px rgba(255, 20, 147, 0.3);
+            display: none; position: fixed; inset: 0; 
+            background: radial-gradient(circle, rgba(45, 27, 46, 0.97) 0%, rgba(0,0,0,0.99) 100%); 
+            z-index: 100; color: white; flex-direction: column; align-items: center; justify-content: center; 
+            text-align: center; backdrop-filter: blur(12px);
+            border: 6px solid var(--hot-pink); box-shadow: inset 0 0 60px rgba(255, 20, 147, 0.4);
         }
-
-        .overlay-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .overlay-btns button { padding: 15px 40px; border: 2px solid #fff; border-radius: 50px; color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; transition: transform 0.2s; }
-        #share-btn { background: var(--sky); box-shadow: 0 0 15px var(--sky); }
-        #retry-btn { background: var(--hot-pink); box-shadow: 0 0 15px var(--hot-pink); }
+        .overlay-btns { display: flex; flex-direction: column; gap: 12px; margin-top: 25px; }
+        .overlay-btns button { 
+            padding: 16px 50px; border: 3px solid #fff; border-radius: 50px; 
+            color: white; font-weight: bold; cursor: pointer; text-transform: uppercase; 
+            transition: all 0.2s; font-size: 18px;
+        }
+        #share-btn { background: var(--sky); box-shadow: 0 0 20px var(--sky); }
+        #retry-btn { background: var(--hot-pink); box-shadow: 0 0 20px var(--hot-pink); }
     </style>
 </head>
 <body>
@@ -196,17 +203,17 @@
             <div id="stats-bar">
                 <div id="hp-display">❤️ x15</div>
                 <div id="score-display">✨ 0</div>
-                <div id="hi-display" style="font-size: 10px; opacity: 0.8;">🏆 0</div>
+                <div id="hi-display" style="font-size: 11px; opacity: 0.85;">🏆 0</div>
                 <div id="mult-display">x1</div>
             </div>
             <div id="combo-meter"><div id="combo-fill"></div></div>
         </div>
         <div id="controls">
             <div class="d-pad">
-                <div style="grid-column: 2;"><button class="btn" id="up" style="width:100%;height:100%">▲</button></div>
-                <div style="grid-row: 2; grid-column: 1;"><button class="btn" id="left" style="width:100%;height:100%">◀</button></div>
-                <div style="grid-row: 2; grid-column: 2;"><button class="btn" id="down" style="width:100%;height:100%">▼</button></div>
-                <div style="grid-row: 2; grid-column: 3;"><button class="btn" id="right" style="width:100%;height:100%">▶</button></div>
+                <div style="grid-column: 2;"><button class="btn" id="up">▲</button></div>
+                <div style="grid-row: 2; grid-column: 1;"><button class="btn" id="left">◀</button></div>
+                <div style="grid-row: 2; grid-column: 2;"><button class="btn" id="down">▼</button></div>
+                <div style="grid-row: 2; grid-column: 3;"><button class="btn" id="right">▶</button></div>
             </div>
             <button class="btn" id="btn-sprint">👟</button>
             <button class="btn" id="btn-boop">BOOP!</button>
@@ -228,13 +235,32 @@ const mCanvas = document.getElementById('m-canvas'), mCtx = mCanvas.getContext('
 const vignette = document.getElementById('vignette');
 canvas.width = 400; canvas.height = 300; mCanvas.width = 80; mCanvas.height = 80;
 
+let audioCtx;
+function playSound(type = 'sine', freq = 440, duration = 200, vol = 0.25, sweep = 0) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    osc.type = type;
+    const now = audioCtx.currentTime;
+    osc.frequency.setValueAtTime(freq, now);
+    if (sweep !== 0) {
+        const target = freq * Math.pow(2, sweep / 1200); // musical pitch sweep
+        osc.frequency.exponentialRampToValueAtTime(target, now + duration / 1000);
+    }
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.001, now);                    // soft start
+    gain.gain.linearRampToValueAtTime(vol, now + 0.018);     // gentle attack
+    gain.gain.linearRampToValueAtTime(0.001, now + duration / 1000); // soft fade-out
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + duration / 1000 + 0.03);
+}
+
 const assets = {
     bearIdle: new Image(), bearAtk: new Image(),
     smallIdle: new Image(), smallAtk: new Image(),
     predIdle: new Image(), predAtk: new Image(),
     elephantIdle: new Image(), elephantAtk: new Image(),
     bossIdle: new Image(), bossAtk: new Image(),
-    // New Wall Textures
     wall1: new Image(), wall2: new Image(), wall3: new Image()
 };
 
@@ -248,7 +274,6 @@ assets.elephantIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/ref
 assets.elephantAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/imag69.png';
 assets.bossIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image70.png';
 assets.bossAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image71.png';
-// Walls Source
 assets.wall1.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall2.jpg';
 assets.wall2.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall%20area%201.png';
 assets.wall3.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall3.jpg';
@@ -267,6 +292,8 @@ let levelTransitioning = false;
 
 function startGame() {
     document.getElementById('start-menu').style.display = 'none';
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     initGame();
     loop();
 }
@@ -284,27 +311,15 @@ function loadLevel(idx) {
     isLoading = true;
     
     levelIdx = idx; const l = MAPS[idx];
-    player.x = l.start[0]; 
-    player.y = l.start[1];
+    player.x = l.start[0]; player.y = l.start[1];
     
     sprites = (l.enemies || []).map(e => ({...e, hp: 3, alive: true, lastShot: Date.now() + 2000, atkTimer: 0}));
     if (l.boss) sprites.push({...l.boss, hp: 12, alive: true, type: 'boss', lastShot: Date.now(), atkTimer: 0, strafeDir: 1, strafeTimer: 0});
     
-    if (sprites.length > 0) {
-        let nearest = sprites[0], minDist = Infinity;
-        sprites.forEach(s => {
-            let d = Math.sqrt((s.x - player.x)**2 + (s.y - player.y)**2);
-            if (d < minDist) { minDist = d; nearest = s; }
-        });
-        player.dir = Math.atan2(nearest.y - player.y, nearest.x - player.x);
-    }
     projectiles = []; particles = [];
     showLevelCard(l.n, l.isSecret ? "SECRET FOUND!" : "LEVEL " + (idx + 1));
     
-    setTimeout(() => { 
-        isLoading = false; 
-        levelTransitioning = false;
-    }, 500);
+    setTimeout(() => { isLoading = false; levelTransitioning = false; }, 500);
 }
 
 function showLevelCard(name, sub) {
@@ -330,23 +345,32 @@ document.getElementById('btn-boop').onclick = doBoop;
 function doBoop() {
     if (!gameActive || attackAnim > 0 || isLoading) return;
     attackAnim = 1.0;
-    for(let i=0; i<15; i++) {
-        let ang = (player.dir - 0.2) + Math.random() * 0.4;
-        particles.push({x: player.x + Math.cos(ang)*0.5, y: player.y + Math.sin(ang)*0.5, vx: Math.cos(ang)*0.15, vy: Math.sin(ang)*0.15, l: 0.8, c: "🌸", scale: 0.3});
+    
+    // ✨ Magical soft sparkle boop (ascending chimes)
+    playSound('sine', 920, 55, 0.28);
+    setTimeout(() => playSound('sine', 1240, 65, 0.26), 28);
+    setTimeout(() => playSound('triangle', 1580, 85, 0.22), 62);
+
+    for(let i=0; i<18; i++) {
+        let ang = (player.dir - 0.25) + Math.random() * 0.5;
+        particles.push({x: player.x + Math.cos(ang)*0.5, y: player.y + Math.sin(ang)*0.5, vx: Math.cos(ang)*0.18, vy: Math.sin(ang)*0.18, l: 0.85, c: "🌸", scale: 0.32});
     }
     sprites.forEach(s => {
         let d = Math.sqrt((s.x-player.x)**2 + (s.y-player.y)**2);
         let angToEnemy = Math.atan2(s.y - player.y, s.x - player.x);
         let angleDiff = Math.abs(angToEnemy - player.dir);
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        angleDiff = Math.abs(angleDiff);
-        if (s.alive && d < 6.0 && angleDiff < 0.8 && !s.pickup && s.e !== "🌀") {
-            s.hp--; player.combo = Math.min(100, player.combo + 25);
-            spawnParticles(s.x, s.y, "✨", 5);
+        if (s.alive && d < 6 && angleDiff < 0.85 && !s.pickup && s.e !== "🌀") {
+            s.hp--;
+            playSound('triangle', 520, 95, 0.19); // soft magical hit
+            player.combo = Math.min(100, player.combo + 28);
+            spawnParticles(s.x, s.y, "✨", 6);
             if (s.hp <= 0) {
-                s.alive = false; player.score += (s.type === 'boss' ? 2000 : 200) * player.mult;
-                spawnParticles(s.x, s.y, "☁️", 12);
-                if (!s.type && Math.random() < 0.33) sprites.push({x: s.x, y: s.y, e: "🧁", pickup: true, alive: true});
+                s.alive = false;
+                playSound('sine', 340, 380, 0.26, -240); // gentle descending poof
+                player.score += (s.type === 'boss' ? 2000 : 220) * player.mult;
+                spawnParticles(s.x, s.y, "☁️", 14);
+                if (!s.type && Math.random() < 0.35) sprites.push({x: s.x, y: s.y, e: "🧁", pickup: true, alive: true});
                 checkWin();
             }
         }
@@ -355,8 +379,7 @@ function doBoop() {
 
 function spawnParticles(x, y, char, count) {
     for(let i=0; i<count; i++) {
-        if (particles.length > 100) particles.shift();
-        particles.push({ x, y, vx:(Math.random()-.5)*0.1, vy:(Math.random()-.5)*0.1, l: 1.0, c: char });
+        particles.push({ x, y, vx:(Math.random()-0.5)*0.12, vy:(Math.random()-0.5)*0.12, l: 1.05, c: char });
     }
 }
 
@@ -365,13 +388,11 @@ function checkWin() {
     if (!enemiesRemaining) {
         if (MAPS[levelIdx].isSecret) {
             MAPS[levelIdx].m[2][2] = 9;
-            if (!sprites.some(s => s.e === "🌀")) {
-                sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
-            }
+            if (!sprites.some(s => s.e === "🌀")) sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
         } else if (levelIdx < MAPS.length - 1 && levelIdx !== 3) {
-             loadLevel(++levelIdx);
+            loadLevel(++levelIdx);
         } else if (levelIdx === 4) {
-             showEnd("VICTORY! 🏆");
+            showEnd("VICTORY! 🏆");
         }
     }
 }
@@ -380,37 +401,33 @@ function showEnd(msg) {
     gameActive = false;
     const overlay = document.getElementById('overlay');
     const shareBtn = document.getElementById('share-btn');
-    shareBtn.innerText = "Share Your Quest 🪄"; 
-
     const isWin = msg.includes("VICTORY");
-    overlay.style.borderColor = isWin ? "var(--sky)" : "var(--hot-pink)";
-    overlay.style.boxShadow = isWin ? "inset 0 0 50px rgba(79, 195, 247, 0.3)" : "inset 0 0 50px rgba(255, 20, 147, 0.3)";
     
-    let highScore = localStorage.getItem('sfwDoomHiScore') || 0;
+    overlay.style.borderColor = isWin ? "var(--sky)" : "var(--hot-pink)";
+    overlay.style.boxShadow = isWin ? "inset 0 0 60px rgba(79,195,247,0.4)" : "inset 0 0 60px rgba(255,20,147,0.4)";
+    
+    let highScore = parseInt(localStorage.getItem('sfwDoomHiScore') || '0');
     let currentScore = Math.floor(player.score);
-    if (currentScore > highScore) { 
-        localStorage.setItem('sfwDoomHiScore', currentScore); 
-        highScore = currentScore; 
-        if(isWin) msg = "NEW PERSONAL BEST! 🌟"; 
+    if (currentScore > highScore) {
+        localStorage.setItem('sfwDoomHiScore', currentScore);
+        highScore = currentScore;
     }
     
     overlay.style.display = 'flex';
     document.getElementById('status-msg').innerText = msg;
-    document.getElementById('final-stats').innerHTML = `Final Score: ${currentScore}<br><span style="color:var(--pink);font-size:0.8em;">Best: ${highScore}</span>`;
+    document.getElementById('final-stats').innerHTML = `Final Score: ${currentScore}<br><span style="color:var(--pink);">Best: ${highScore}</span>`;
 
     shareBtn.onclick = () => {
         const comboBadge = maxMultSeen >= 5 ? "🔥 COMBO MASTER 🔥\n" : "";
         const shareText = isWin 
-            ? `🏆 I BEAT SFWDOOM: Plushie Quest!\n${comboBadge}✨ Score: ${currentScore}\n📍 Finished at: ${MAPS[levelIdx].n}`
-            : `🧸 I got Booped on SFWDOOM: Plushie Quest!\n${comboBadge}✨ Final Score: ${currentScore}\n📍 Reached: ${MAPS[levelIdx].n}`;
+            ? `🏆 I BEAT SFWDOOM Plushie Quest!\n${comboBadge}✨ Score: ${currentScore}\n📍 ${MAPS[levelIdx].n}`
+            : `🧸 I got booped in SFWDOOM!\n${comboBadge}✨ Score: ${currentScore}\n📍 ${MAPS[levelIdx].n}`;
         
-        const fullPost = `${shareText}\n\nEnter the Forest at: https://sfwdoom.fun 🪄🧸`;
-        
+        const fullPost = `${shareText}\n\nEnter the Forest → https://sfwdoom.fun 🪄🧸`;
         navigator.clipboard.writeText(fullPost).then(() => {
             shareBtn.innerText = "Opening X... ✨";
-            const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(fullPost)}`;
-            window.open(xUrl, '_blank');
-            setTimeout(() => { shareBtn.innerText = "Share Your Quest 🪄"; }, 3000);
+            window.open(`https://x.com/intent/post?text=${encodeURIComponent(fullPost)}`, '_blank');
+            setTimeout(() => shareBtn.innerText = "Share Your Quest 🪄", 2500);
         });
     };
 }
@@ -419,46 +436,48 @@ document.getElementById('retry-btn').onclick = initGame;
 
 function update() {
     if (!gameActive || isLoading) return;
-    if (attackAnim > 0) attackAnim -= 0.1;
-    if (shake > 0) shake -= 0.1;
-    let isSprinting = keys['ShiftLeft'] && player.score > 0;
-    let moveSpeed = isSprinting ? 0.08 : 0.035, rotSpeed = 0.04;
-    if (isSprinting) player.score -= 0.1;
+    if (attackAnim > 0) attackAnim -= 0.12;
+    if (shake > 0) shake -= 0.12;
+
+    let isSprinting = keys['ShiftLeft'];
+    let moveSpeed = isSprinting ? 0.085 : 0.038, rotSpeed = 0.045;
     if (keys['KeyA']) player.dir -= rotSpeed;
     if (keys['KeyD']) player.dir += rotSpeed;
+
     let dx = Math.cos(player.dir) * moveSpeed, dy = Math.sin(player.dir) * moveSpeed;
-    let map = MAPS[levelIdx].m;
+    const map = MAPS[levelIdx].m;
 
     const canMove = (x, y) => {
         let nx = Math.floor(x), ny = Math.floor(y);
         if (!map[ny] || map[ny][nx] === undefined) return false;
-        if (map[ny][nx] === 9) { 
-            const enemiesLeft = sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
-            if (!enemiesLeft && !levelTransitioning) {
-                if(levelIdx === 2) loadLevel(3); 
-                else if(levelIdx === 3) loadLevel(4); 
-                else loadLevel(2);
+        if (map[ny][nx] === 9) {
+            const noEnemies = !sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
+            if (noEnemies && !levelTransitioning) {
+                if (levelIdx === 3) loadLevel(4);
+                else if (levelIdx === 2) loadLevel(3);
             }
-            return false; 
+            return false;
         }
         return map[ny][nx] === 0;
     };
 
     isMoving = false;
-    if (keys['KeyW']) { 
-        if(canMove(player.x+dx, player.y)) { player.x+=dx; isMoving = true; }
-        if(canMove(player.x, player.y+dy)) { player.y+=dy; isMoving = true; }
+    if (keys['KeyW']) {
+        if (canMove(player.x + dx, player.y)) { player.x += dx; isMoving = true; }
+        if (canMove(player.x, player.y + dy)) { player.y += dy; isMoving = true; }
     }
-    if (keys['KeyS']) { 
-        if(canMove(player.x-dx, player.y)) { player.x-=dx; isMoving = true; }
-        if(canMove(player.x, player.y-dy)) { player.y-=dy; isMoving = true; }
+    if (keys['KeyS']) {
+        if (canMove(player.x - dx, player.y)) { player.x -= dx; isMoving = true; }
+        if (canMove(player.x, player.y - dy)) { player.y -= dy; isMoving = true; }
     }
 
-    if (isMoving) bob += isSprinting ? 0.25 : 0.15; else bob = Math.max(0, bob - 0.1);
-    vignette.style.opacity = player.hp <= 5 ? (0.4 + Math.sin(Date.now() * 0.05) * 0.4) : 0;
-    player.combo = Math.max(0, player.combo - 0.1); 
+    if (isMoving) bob += isSprinting ? 0.28 : 0.16; else bob = Math.max(0, bob - 0.12);
+
+    vignette.style.opacity = player.hp <= 5 ? (0.45 + Math.sin(Date.now() * 0.06) * 0.45) : 0;
+
+    player.combo = Math.max(0, player.combo - 0.12);
     player.mult = Math.floor(player.combo / 20) + 1;
-    if(player.mult > maxMultSeen) maxMultSeen = player.mult;
+    if (player.mult > maxMultSeen) maxMultSeen = player.mult;
 
     document.getElementById('hp-display').innerText = `❤️ x${player.hp}`;
     document.getElementById('score-display').innerText = `✨ ${Math.floor(player.score)}`;
@@ -467,54 +486,79 @@ function update() {
     document.getElementById('combo-fill').style.width = player.combo + "%";
 
     const faceImg = document.getElementById('player-face');
-    const hpPercent = (player.hp / 15) * 100;
-    if (hpPercent > 75) faceImg.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/mainface.png';
-    else if (hpPercent > 50) faceImg.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_k7jgubk7jgubk7jg-Photoroom.png';
-    else if (hpPercent > 25) faceImg.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_oo1o3too1o3too1o-Photoroom.png';
-    else faceImg.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_zh1zaqzh1zaqzh1z-Photoroom.png';
+    const hpP = (player.hp / 15) * 100;
+    faceImg.src = hpP > 75 ? 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/mainface.png' :
+                  hpP > 50 ? 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_k7jgubk7jgubk7jg-Photoroom.png' :
+                  hpP > 25 ? 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_oo1o3too1o3too1o-Photoroom.png' :
+                             'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_zh1zaqzh1zaqzh1z-Photoroom.png';
 
     sprites.forEach(s => {
         if (!s.alive) return;
         if (s.atkTimer > 0) s.atkTimer -= 16;
         let d = Math.sqrt((s.x-player.x)**2 + (s.y-player.y)**2);
+        
         if (s.e === "🌀" && d < 0.6) checkWin();
-        if (s.pickup && d < 0.6) { s.alive = false; player.hp = Math.min(45, player.hp + 5); checkWin(); }
+        if (s.pickup && d < 0.6) { 
+            s.alive = false; 
+            player.hp = Math.min(45, player.hp + 5); 
+            // ✨ Soft magical pickup chimes
+            playSound('sine', 1180, 55, 0.27);
+            setTimeout(() => playSound('sine', 1620, 70, 0.27), 35);
+            setTimeout(() => playSound('sine', 2040, 85, 0.23), 85);
+            checkWin(); 
+        }
         
         if (s.type === 'boss') {
             s.strafeTimer++;
-            if(s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
-            let sy = s.y + (s.strafeDir * 0.035);
-            if(canMove(s.x, sy)) s.y = sy;
+            if (s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
+            let sy = s.y + (s.strafeDir * 0.038);
+            if (canMove(s.x, sy)) s.y = sy;
             
-            if (d < 12 && Date.now() - s.lastShot > 2000) {
+            if (d < 12 && Date.now() - s.lastShot > 1900) {
                 let a = Math.atan2(player.y-s.y, player.x-s.x);
-                projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*.09, vy:Math.sin(a)*.09, l:150});
-                s.lastShot = Date.now(); s.atkTimer = 500;
+                projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*0.095, vy:Math.sin(a)*0.095, l:150});
+                s.lastShot = Date.now(); s.atkTimer = 480;
             }
-        } else if (!s.pickup && s.e !== "🌀" && d < 8 && Date.now() - s.lastShot > 4000) {
+        } else if (!s.pickup && s.e !== "🌀" && d < 8 && Date.now() - s.lastShot > 3900) {
             let a = Math.atan2(player.y-s.y, player.x-s.x);
-            projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*.08, vy:Math.sin(a)*.08, l:150});
-            s.lastShot = Date.now(); s.atkTimer = 500;
+            projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*0.085, vy:Math.sin(a)*0.085, l:150});
+            s.lastShot = Date.now(); s.atkTimer = 480;
         }
     });
 
     projectiles.forEach((p, i) => {
         p.x += p.vx; p.y += p.vy; p.l--;
-        if (Math.sqrt((p.x-player.x)**2 + (p.y-player.y)**2) < 0.4) {
-            player.hp--; player.combo = 0; shake = 1.0; projectiles.splice(i, 1);
+        if (Math.sqrt((p.x-player.x)**2 + (p.y-player.y)**2) < 0.45) {
+            player.hp--; player.combo = 0; shake = 1.1;
+            playSound('triangle', 410, 135, 0.23, -110); // soft sad magical hurt
             if (player.hp <= 0) showEnd("BOOPED! 🧸");
-        } else if (p.l <= 0 || map[Math.floor(p.y)][Math.floor(p.x)] === 1) projectiles.splice(i, 1);
+            projectiles.splice(i, 1);
+        } else if (p.l <= 0 || map[Math.floor(p.y)]?.[Math.floor(p.x)] === 1) {
+            projectiles.splice(i, 1);
+        }
     });
-    particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.l -= 0.03; if(p.l <= 0) particles.splice(i, 1); });
+
+    particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.l -= 0.035; if (p.l <= 0) particles.splice(i, 1); });
 }
 
 function draw() {
     ctx.save();
-    let currentBob = Math.sin(bob) * 10;
+    let currentBob = Math.sin(bob) * 11;
     ctx.translate(0, currentBob);
-    if (shake > 0) ctx.translate((Math.random()-0.5)*20*shake, (Math.random()-0.5)*20*shake);
-    ctx.fillStyle = "#221122"; ctx.fillRect(0,-100,400,250); // Sky
-    ctx.fillStyle = "#111"; ctx.fillRect(0,150,400,200); // Floor
+    if (shake > 0) ctx.translate((Math.random()-0.5)*22*shake, (Math.random()-0.5)*22*shake);
+
+    // Gradient sky & floor
+    const skyGrad = ctx.createLinearGradient(0, -100, 0, 160);
+    skyGrad.addColorStop(0, levelIdx === 4 ? '#0a0825' : '#87CEEB');
+    skyGrad.addColorStop(1, '#221122');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, -100, 400, 260);
+
+    const floorGrad = ctx.createLinearGradient(0, 150, 0, 350);
+    floorGrad.addColorStop(0, '#111');
+    floorGrad.addColorStop(1, '#000');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, 150, 400, 200);
 
     const map = MAPS[levelIdx].m;
     const tex = MAPS[levelIdx].tex;
@@ -527,42 +571,42 @@ function draw() {
             d += 0.02;
             let tx = Math.floor(player.x + rayX*d), ty = Math.floor(player.y + rayY*d);
             if (map[ty] && map[ty][tx]) { 
-                hit = map[ty][tx]; 
-                let hitX = player.x + rayX*d, hitY = player.y + rayY*d;
-                side = (Math.abs(hitX - Math.round(hitX)) < Math.abs(hitY - Math.round(hitY))) ? 0 : 1;
+                hit = map[ty][tx];
+                side = (Math.abs(player.x + rayX*d - Math.round(player.x + rayX*d)) < Math.abs(player.y + rayY*d - Math.round(player.y + rayY*d))) ? 0 : 1;
             }
         }
         zBuf[i] = d;
         let h = 300 / (d * Math.cos(ang - player.dir));
-        
-        // Texture Mapping Logic
+
         let wallX = (side === 0) ? (player.y + rayY*d) : (player.x + rayX*d);
         wallX -= Math.floor(wallX);
         let texX = Math.floor(wallX * tex.width);
         if (side === 0 && rayX > 0) texX = tex.width - texX - 1;
         if (side === 1 && rayY < 0) texX = tex.width - texX - 1;
 
-        ctx.globalAlpha = Math.max(0.2, 1 - (d / 12));
-        if (hit === 9) { // Portal highlight
-            ctx.fillStyle = "white"; ctx.fillRect(i, 150-h/2, 1, h);
+        ctx.globalAlpha = Math.max(0.18, 1 - (d / 12));
+        if (hit === 9) {
+            ctx.fillStyle = "#fff"; ctx.fillRect(i, 150 - h/2, 1, h);
         } else {
             ctx.drawImage(tex, texX, 0, 1, tex.height, i, 150 - h/2, 1, h);
-            if (side === 1) { // Shadowing for depth
-                ctx.fillStyle = "rgba(0,0,0,0.3)";
-                ctx.fillRect(i, 150-h/2, 1, h);
+            if (side === 1) {
+                ctx.fillStyle = "rgba(0,0,0,0.35)";
+                ctx.fillRect(i, 150 - h/2, 1, h);
             }
         }
-        ctx.globalAlpha = 1.0;
+        ctx.globalAlpha = 1;
     }
 
-    let itms = [...sprites.filter(s=>s.alive), ...projectiles.map(p=>({x:p.x, y:p.y, e:"💗", scale:0.4})), ...particles.map(p=>({x:p.x, y:p.y, e:p.c, scale:(p.scale || 0.3) * p.l, l:p.l}))];
+    let itms = [...sprites.filter(s=>s.alive), ...projectiles.map(p=>({x:p.x, y:p.y, e:"💗", scale:0.38})), ...particles.map(p=>({x:p.x, y:p.y, e:p.c, scale:(p.scale||0.3)*p.l, l:p.l}))];
     itms.sort((a,b) => (b.x-player.x)**2 + (b.y-player.y)**2 - ((a.x-player.x)**2 + (a.y-player.y)**2)).forEach(s => {
-        let dx = s.x - player.x, dy = s.y - player.y, dist = Math.sqrt(dx*dx + dy*dy), ang = Math.atan2(dy, dx) - player.dir;
+        let dx = s.x - player.x, dy = s.y - player.y, dist = Math.sqrt(dx*dx + dy*dy);
+        let ang = Math.atan2(dy, dx) - player.dir;
         while (ang < -Math.PI) ang += Math.PI*2; while (ang > Math.PI) ang -= Math.PI*2;
         if (Math.abs(ang) < 0.8) {
             let sx = (ang + 0.5) * 400;
             if (zBuf[Math.floor(sx)] > dist) {
-                let sz = 300 / dist * (s.scale || (s.type === 'boss' ? 2.5 : 1)); ctx.globalAlpha = s.l || 1.0; 
+                let sz = 300 / dist * (s.scale || (s.type === 'boss' ? 2.6 : 1));
+                ctx.globalAlpha = s.l || 1;
                 if (s.e === "BEAR") ctx.drawImage(s.atkTimer > 0 ? assets.bearAtk : assets.bearIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "SMALL") ctx.drawImage(s.atkTimer > 0 ? assets.smallAtk : assets.smallIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "PRED") ctx.drawImage(s.atkTimer > 0 ? assets.predAtk : assets.predIdle, sx - sz/2, 150 - sz/2, sz, sz);
@@ -570,23 +614,31 @@ function draw() {
                 else if (s.e === "BOSS_FINAL") ctx.drawImage(s.atkTimer > 0 ? assets.bossAtk : assets.bossIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "🌀") { ctx.font = `${sz}px serif`; ctx.textAlign = "center"; ctx.fillText(s.e, sx, 150 + sz/2); }
                 else { ctx.font = `${sz}px serif`; ctx.textAlign = "center"; ctx.fillText(s.e || "✨", sx, 150 + sz/2); }
-                ctx.globalAlpha = 1.0;
+                ctx.globalAlpha = 1;
             }
         }
     });
+
     ctx.restore(); ctx.save();
-    let wandSway = Math.cos(bob * 0.5) * 15, wandAtkY = Math.sin(attackAnim * Math.PI) * -50;
-    ctx.font = "140px serif"; ctx.textAlign = "center"; ctx.fillText("🪄", 200 + wandSway, 320 + currentBob + wandAtkY);
-    ctx.restore(); drawMinimap();
+    let wandSway = Math.cos(bob * 0.5) * 16;
+    let wandAtkY = Math.sin(attackAnim * Math.PI) * -48;
+    ctx.font = "145px serif"; ctx.textAlign = "center";
+    ctx.fillText("🪄", 200 + wandSway, 275 + currentBob + wandAtkY);
+    ctx.restore();
+
+    drawMinimap();
 }
 
 function drawMinimap() {
-    mCtx.clearRect(0,0,80,80); 
+    mCtx.clearRect(0,0,80,80);
     const map = MAPS[levelIdx].m, cw = 80 / map[0].length, ch = 80 / map.length;
-    mCtx.fillStyle = "rgba(255,255,255,0.2)";
+    mCtx.fillStyle = "rgba(255,255,255,0.25)";
     for(let y=0; y<map.length; y++) for(let x=0; x<map[y].length; x++) if(map[y][x]) mCtx.fillRect(x*cw, y*ch, cw, ch);
-    sprites.forEach(s => { if(s.alive) { mCtx.fillStyle = (s.pickup || s.e === "🌀") ? "cyan" : "#ff4444"; mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2, 0, Math.PI*2); mCtx.fill(); } });
-    mCtx.fillStyle = "#44ff44"; mCtx.beginPath(); mCtx.arc(player.x*cw, player.y*ch, 3, 0, Math.PI*2); mCtx.fill();
+    sprites.forEach(s => { if(s.alive) {
+        mCtx.fillStyle = (s.pickup || s.e === "🌀") ? "#00ffff" : "#ff3366";
+        mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2.5, 0, Math.PI*2); mCtx.fill();
+    }});
+    mCtx.fillStyle = "#44ff88"; mCtx.beginPath(); mCtx.arc(player.x*cw, player.y*ch, 3.5, 0, Math.PI*2); mCtx.fill();
 }
 
 function loop() { if(gameActive) { update(); draw(); } requestAnimationFrame(loop); }
