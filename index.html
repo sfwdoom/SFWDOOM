@@ -21,34 +21,92 @@
             margin: 0; 
             background: #1a1a1a; 
             overflow: hidden; 
-            font-family: 'Arial Rounded MT Bold', sans-serif; 
+            font-family: 'Arial Rounded MT Bold', 'Helvetica', sans-serif; 
             touch-action: none; 
             -webkit-user-select: none;
             user-select: none;
         }
         
+        /* SHARP START MENU */
         #start-menu { 
             position: fixed; 
             inset: 0; 
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+            background: linear-gradient(135deg, rgba(30, 18, 31, 0.85), rgba(0, 0, 0, 0.7)), 
                         url('https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image-10-1.jpg');
             background-size: cover;
             background-position: center;
             z-index: 200; 
             display: flex; 
             flex-direction: column; 
-            align-items: center; 
+            align-items: flex-start;
             justify-content: center; 
+            padding-left: 10%;
             color: white; 
+            overflow: hidden;
         }
 
-        .logo-container { text-align: center; margin-bottom: 40px; pointer-events: none; }
-        .logo-main { font-size: 64px; font-weight: 900; letter-spacing: -2px; color: var(--hot-pink); text-shadow: 0 0 20px rgba(255, 20, 147, 0.5); margin: 0; }
-        .logo-sub { font-size: 18px; color: var(--sky); letter-spacing: 4px; text-transform: uppercase; margin: 0; }
-        
-        .start-btn { padding: 20px 60px; font-size: 24px; background: var(--hot-pink); color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px #a30b5d; transition: transform 0.1s; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        #start-menu::after {
+            content: " ";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+        }
 
+        .logo-container { 
+            text-align: left; 
+            border-left: 6px solid var(--hot-pink); 
+            padding-left: 25px;
+            margin-bottom: 50px; 
+            z-index: 210;
+        }
+
+        .logo-main { 
+            font-size: 80px; 
+            line-height: 0.85;
+            font-weight: 900; 
+            text-transform: uppercase;
+            margin: 0;
+            background: linear-gradient(to bottom, #fff 40%, var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(255, 20, 147, 0.4));
+            letter-spacing: -2px;
+        }
+
+        .logo-sub { 
+            font-size: 14px; 
+            color: var(--sky); 
+            letter-spacing: 10px; 
+            margin: 15px 0 0 0;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .start-btn { 
+            padding: 18px 50px; 
+            font-size: 16px; 
+            background: rgba(255, 20, 147, 0.1); 
+            color: white; 
+            border: 2px solid var(--hot-pink); 
+            border-radius: 2px;
+            cursor: pointer; 
+            z-index: 210;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        .start-btn:hover {
+            background: var(--hot-pink);
+            box-shadow: 0 0 30px var(--hot-pink);
+            transform: translateX(15px);
+        }
+
+        /* VIEWPORT & UI */
         #viewport { position: relative; width: 100vw; height: 50vh; background: #000; border-bottom: 4px solid var(--pink); overflow: hidden; }
         canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
         
@@ -173,12 +231,16 @@
     </style>
 </head>
 <body>
+    <audio id="menu-music" loop>
+        <source src="https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/sounds/neon_echoes.mp3" type="audio/mpeg">
+    </audio>
+
     <div id="start-menu">
         <div class="logo-container">
             <h1 class="logo-main">SFWDOOM</h1>
             <p class="logo-sub">Plushie Quest Edition</p>
         </div>
-        <button class="start-btn" onclick="startGame()">ENTER THE FOREST</button>
+        <button class="start-btn" onclick="startGame()">Enter The Forest</button>
     </div>
 
     <div id="viewport">
@@ -226,7 +288,14 @@
 const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
 const mCanvas = document.getElementById('m-canvas'), mCtx = mCanvas.getContext('2d');
 const vignette = document.getElementById('vignette');
+const menuMusic = document.getElementById('menu-music');
+
 canvas.width = 400; canvas.height = 300; mCanvas.width = 80; mCanvas.height = 80;
+
+// Play music on first interaction
+window.addEventListener('mouseover', () => {
+    menuMusic.play().catch(e => console.log("Autoplay blocked"));
+}, { once: true });
 
 const assets = {
     bearIdle: new Image(), bearAtk: new Image(),
@@ -234,7 +303,6 @@ const assets = {
     predIdle: new Image(), predAtk: new Image(),
     elephantIdle: new Image(), elephantAtk: new Image(),
     bossIdle: new Image(), bossAtk: new Image(),
-    // New Wall Textures
     wall1: new Image(), wall2: new Image(), wall3: new Image()
 };
 
@@ -248,7 +316,6 @@ assets.elephantIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/ref
 assets.elephantAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/imag69.png';
 assets.bossIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image70.png';
 assets.bossAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image71.png';
-// Walls Source
 assets.wall1.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall2.jpg';
 assets.wall2.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall%20area%201.png';
 assets.wall3.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall3.jpg';
@@ -266,6 +333,7 @@ let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, is
 let levelTransitioning = false;
 
 function startGame() {
+    menuMusic.pause(); // Stop music when starting game, or loop it!
     document.getElementById('start-menu').style.display = 'none';
     initGame();
     loop();
@@ -280,12 +348,9 @@ function initGame() {
 
 function loadLevel(idx) {
     if (levelTransitioning || idx >= MAPS.length) return;
-    levelTransitioning = true;
-    isLoading = true;
-    
+    levelTransitioning = true; isLoading = true;
     levelIdx = idx; const l = MAPS[idx];
-    player.x = l.start[0]; 
-    player.y = l.start[1];
+    player.x = l.start[0]; player.y = l.start[1];
     
     sprites = (l.enemies || []).map(e => ({...e, hp: 3, alive: true, lastShot: Date.now() + 2000, atkTimer: 0}));
     if (l.boss) sprites.push({...l.boss, hp: 12, alive: true, type: 'boss', lastShot: Date.now(), atkTimer: 0, strafeDir: 1, strafeTimer: 0});
@@ -300,11 +365,7 @@ function loadLevel(idx) {
     }
     projectiles = []; particles = [];
     showLevelCard(l.n, l.isSecret ? "SECRET FOUND!" : "LEVEL " + (idx + 1));
-    
-    setTimeout(() => { 
-        isLoading = false; 
-        levelTransitioning = false;
-    }, 500);
+    setTimeout(() => { isLoading = false; levelTransitioning = false; }, 500);
 }
 
 function showLevelCard(name, sub) {
@@ -365,9 +426,7 @@ function checkWin() {
     if (!enemiesRemaining) {
         if (MAPS[levelIdx].isSecret) {
             MAPS[levelIdx].m[2][2] = 9;
-            if (!sprites.some(s => s.e === "🌀")) {
-                sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
-            }
+            if (!sprites.some(s => s.e === "🌀")) sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
         } else if (levelIdx < MAPS.length - 1 && levelIdx !== 3) {
              loadLevel(++levelIdx);
         } else if (levelIdx === 4) {
@@ -380,18 +439,14 @@ function showEnd(msg) {
     gameActive = false;
     const overlay = document.getElementById('overlay');
     const shareBtn = document.getElementById('share-btn');
-    shareBtn.innerText = "Share Your Quest 🪄"; 
-
     const isWin = msg.includes("VICTORY");
     overlay.style.borderColor = isWin ? "var(--sky)" : "var(--hot-pink)";
-    overlay.style.boxShadow = isWin ? "inset 0 0 50px rgba(79, 195, 247, 0.3)" : "inset 0 0 50px rgba(255, 20, 147, 0.3)";
     
     let highScore = localStorage.getItem('sfwDoomHiScore') || 0;
     let currentScore = Math.floor(player.score);
     if (currentScore > highScore) { 
         localStorage.setItem('sfwDoomHiScore', currentScore); 
         highScore = currentScore; 
-        if(isWin) msg = "NEW PERSONAL BEST! 🌟"; 
     }
     
     overlay.style.display = 'flex';
@@ -399,18 +454,10 @@ function showEnd(msg) {
     document.getElementById('final-stats').innerHTML = `Final Score: ${currentScore}<br><span style="color:var(--pink);font-size:0.8em;">Best: ${highScore}</span>`;
 
     shareBtn.onclick = () => {
-        const comboBadge = maxMultSeen >= 5 ? "🔥 COMBO MASTER 🔥\n" : "";
-        const shareText = isWin 
-            ? `🏆 I BEAT SFWDOOM: Plushie Quest!\n${comboBadge}✨ Score: ${currentScore}\n📍 Finished at: ${MAPS[levelIdx].n}`
-            : `🧸 I got Booped on SFWDOOM: Plushie Quest!\n${comboBadge}✨ Final Score: ${currentScore}\n📍 Reached: ${MAPS[levelIdx].n}`;
-        
+        const shareText = isWin ? `🏆 I BEAT SFWDOOM: Plushie Quest!\n✨ Score: ${currentScore}` : `🧸 I got Booped on SFWDOOM!\n✨ Final Score: ${currentScore}`;
         const fullPost = `${shareText}\n\nEnter the Forest at: https://sfwdoom.fun 🪄🧸`;
-        
         navigator.clipboard.writeText(fullPost).then(() => {
-            shareBtn.innerText = "Opening X... ✨";
-            const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(fullPost)}`;
-            window.open(xUrl, '_blank');
-            setTimeout(() => { shareBtn.innerText = "Share Your Quest 🪄"; }, 3000);
+            window.open(`https://x.com/intent/post?text=${encodeURIComponent(fullPost)}`, '_blank');
         });
     };
 }
@@ -433,11 +480,8 @@ function update() {
         let nx = Math.floor(x), ny = Math.floor(y);
         if (!map[ny] || map[ny][nx] === undefined) return false;
         if (map[ny][nx] === 9) { 
-            const enemiesLeft = sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
-            if (!enemiesLeft && !levelTransitioning) {
-                if(levelIdx === 2) loadLevel(3); 
-                else if(levelIdx === 3) loadLevel(4); 
-                else loadLevel(2);
+            if (!sprites.some(s => s.alive && !s.pickup && s.e !== "🌀") && !levelTransitioning) {
+                if(levelIdx === 2) loadLevel(3); else if(levelIdx === 3) loadLevel(4); else loadLevel(2);
             }
             return false; 
         }
@@ -445,20 +489,12 @@ function update() {
     };
 
     isMoving = false;
-    if (keys['KeyW']) { 
-        if(canMove(player.x+dx, player.y)) { player.x+=dx; isMoving = true; }
-        if(canMove(player.x, player.y+dy)) { player.y+=dy; isMoving = true; }
-    }
-    if (keys['KeyS']) { 
-        if(canMove(player.x-dx, player.y)) { player.x-=dx; isMoving = true; }
-        if(canMove(player.x, player.y-dy)) { player.y-=dy; isMoving = true; }
-    }
+    if (keys['KeyW']) { if(canMove(player.x+dx, player.y)) { player.x+=dx; isMoving = true; } if(canMove(player.x, player.y+dy)) { player.y+=dy; isMoving = true; } }
+    if (keys['KeyS']) { if(canMove(player.x-dx, player.y)) { player.x-=dx; isMoving = true; } if(canMove(player.x, player.y-dy)) { player.y-=dy; isMoving = true; } }
 
     if (isMoving) bob += isSprinting ? 0.25 : 0.15; else bob = Math.max(0, bob - 0.1);
     vignette.style.opacity = player.hp <= 5 ? (0.4 + Math.sin(Date.now() * 0.05) * 0.4) : 0;
-    player.combo = Math.max(0, player.combo - 0.1); 
-    player.mult = Math.floor(player.combo / 20) + 1;
-    if(player.mult > maxMultSeen) maxMultSeen = player.mult;
+    player.combo = Math.max(0, player.combo - 0.1); player.mult = Math.floor(player.combo / 20) + 1;
 
     document.getElementById('hp-display').innerText = `❤️ x${player.hp}`;
     document.getElementById('score-display').innerText = `✨ ${Math.floor(player.score)}`;
@@ -481,11 +517,8 @@ function update() {
         if (s.pickup && d < 0.6) { s.alive = false; player.hp = Math.min(45, player.hp + 5); checkWin(); }
         
         if (s.type === 'boss') {
-            s.strafeTimer++;
-            if(s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
-            let sy = s.y + (s.strafeDir * 0.035);
-            if(canMove(s.x, sy)) s.y = sy;
-            
+            s.strafeTimer++; if(s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
+            let sy = s.y + (s.strafeDir * 0.035); if(canMove(s.x, sy)) s.y = sy;
             if (d < 12 && Date.now() - s.lastShot > 2000) {
                 let a = Math.atan2(player.y-s.y, player.x-s.x);
                 projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*.09, vy:Math.sin(a)*.09, l:150});
@@ -513,45 +546,25 @@ function draw() {
     let currentBob = Math.sin(bob) * 10;
     ctx.translate(0, currentBob);
     if (shake > 0) ctx.translate((Math.random()-0.5)*20*shake, (Math.random()-0.5)*20*shake);
-    ctx.fillStyle = "#221122"; ctx.fillRect(0,-100,400,250); // Sky
-    ctx.fillStyle = "#111"; ctx.fillRect(0,150,400,200); // Floor
+    ctx.fillStyle = "#221122"; ctx.fillRect(0,-100,400,250); 
+    ctx.fillStyle = "#111"; ctx.fillRect(0,150,400,200); 
 
-    const map = MAPS[levelIdx].m;
-    const tex = MAPS[levelIdx].tex;
+    const map = MAPS[levelIdx].m; const tex = MAPS[levelIdx].tex;
 
     for (let i = 0; i < 400; i++) {
         let ang = (player.dir - 0.5) + (i / 400), d = 0, hit = 0, side = 0;
         let rayX = Math.cos(ang), rayY = Math.sin(ang);
-        
         while (hit === 0 && d < 12) {
-            d += 0.02;
-            let tx = Math.floor(player.x + rayX*d), ty = Math.floor(player.y + rayY*d);
-            if (map[ty] && map[ty][tx]) { 
-                hit = map[ty][tx]; 
-                let hitX = player.x + rayX*d, hitY = player.y + rayY*d;
-                side = (Math.abs(hitX - Math.round(hitX)) < Math.abs(hitY - Math.round(hitY))) ? 0 : 1;
-            }
+            d += 0.02; let tx = Math.floor(player.x + rayX*d), ty = Math.floor(player.y + rayY*d);
+            if (map[ty] && map[ty][tx]) { hit = map[ty][tx]; let hitX = player.x + rayX*d, hitY = player.y + rayY*d; side = (Math.abs(hitX - Math.round(hitX)) < Math.abs(hitY - Math.round(hitY))) ? 0 : 1; }
         }
-        zBuf[i] = d;
-        let h = 300 / (d * Math.cos(ang - player.dir));
-        
-        // Texture Mapping Logic
-        let wallX = (side === 0) ? (player.y + rayY*d) : (player.x + rayX*d);
-        wallX -= Math.floor(wallX);
+        zBuf[i] = d; let h = 300 / (d * Math.cos(ang - player.dir));
+        let wallX = (side === 0) ? (player.y + rayY*d) : (player.x + rayX*d); wallX -= Math.floor(wallX);
         let texX = Math.floor(wallX * tex.width);
-        if (side === 0 && rayX > 0) texX = tex.width - texX - 1;
-        if (side === 1 && rayY < 0) texX = tex.width - texX - 1;
-
+        if (side === 0 && rayX > 0) texX = tex.width - texX - 1; if (side === 1 && rayY < 0) texX = tex.width - texX - 1;
         ctx.globalAlpha = Math.max(0.2, 1 - (d / 12));
-        if (hit === 9) { // Portal highlight
-            ctx.fillStyle = "white"; ctx.fillRect(i, 150-h/2, 1, h);
-        } else {
-            ctx.drawImage(tex, texX, 0, 1, tex.height, i, 150 - h/2, 1, h);
-            if (side === 1) { // Shadowing for depth
-                ctx.fillStyle = "rgba(0,0,0,0.3)";
-                ctx.fillRect(i, 150-h/2, 1, h);
-            }
-        }
+        if (hit === 9) { ctx.fillStyle = "white"; ctx.fillRect(i, 150-h/2, 1, h); } 
+        else { ctx.drawImage(tex, texX, 0, 1, tex.height, i, 150 - h/2, 1, h); if (side === 1) { ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fillRect(i, 150-h/2, 1, h); } }
         ctx.globalAlpha = 1.0;
     }
 
