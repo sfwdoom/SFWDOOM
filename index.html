@@ -138,9 +138,39 @@
             box-shadow: 0 0 15px var(--hot-pink); transition: width 0.1s linear; 
         }
         
-        #controls { display: flex; width: 100%; max-width: 520px; justify-content: space-around; align-items: center; }
-        .d-pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 8px; }
-        
+        #controls { 
+            display: flex; 
+            width: 100%; 
+            max-width: 560px; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 25px;
+        }
+
+        #joystick-container {
+            width: 170px;
+            height: 170px;
+            position: relative;
+            background: rgba(255,255,255,0.1);
+            border: 5px solid var(--pink);
+            border-radius: 50%;
+            touch-action: none;
+            box-shadow: 0 0 30px rgba(255,20,147,0.4);
+        }
+        #joystick-knob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 64px;
+            height: 64px;
+            background: var(--hot-pink);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--hot-pink), inset 0 0 10px rgba(255,255,255,0.6);
+            transform: translate(-50%, -50%);
+            transition: transform 0.03s linear;
+        }
+
         .btn { 
             background: linear-gradient(145deg, #ff85c0, #d88191); 
             border: 3px solid #fff; 
@@ -160,7 +190,6 @@
             border-radius: 50%; font-size: 15px; font-weight: bold; text-transform: uppercase;
             border: 5px solid #fff; box-shadow: 0 0 25px var(--hot-pink);
         }
-        #btn-sprint { width: 70px; height: 70px; background: linear-gradient(145deg, var(--sky), #0288d1); border-radius: 50%; border: 3px solid #fff; font-size: 28px; }
 
         .overlay { 
             display: none; position: fixed; inset: 0; 
@@ -209,13 +238,9 @@
             <div id="combo-meter"><div id="combo-fill"></div></div>
         </div>
         <div id="controls">
-            <div class="d-pad">
-                <div style="grid-column: 2;"><button class="btn" id="up">▲</button></div>
-                <div style="grid-row: 2; grid-column: 1;"><button class="btn" id="left">◀</button></div>
-                <div style="grid-row: 2; grid-column: 2;"><button class="btn" id="down">▼</button></div>
-                <div style="grid-row: 2; grid-column: 3;"><button class="btn" id="right">▶</button></div>
+            <div id="joystick-container">
+                <div id="joystick-knob"></div>
             </div>
-            <button class="btn" id="btn-sprint">👟</button>
             <button class="btn" id="btn-boop">BOOP!</button>
         </div>
     </div>
@@ -243,13 +268,13 @@ function playSound(type = 'sine', freq = 440, duration = 200, vol = 0.25, sweep 
     const now = audioCtx.currentTime;
     osc.frequency.setValueAtTime(freq, now);
     if (sweep !== 0) {
-        const target = freq * Math.pow(2, sweep / 1200); // musical pitch sweep
+        const target = freq * Math.pow(2, sweep / 1200);
         osc.frequency.exponentialRampToValueAtTime(target, now + duration / 1000);
     }
     const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.001, now);                    // soft start
-    gain.gain.linearRampToValueAtTime(vol, now + 0.018);     // gentle attack
-    gain.gain.linearRampToValueAtTime(0.001, now + duration / 1000); // soft fade-out
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(vol, now + 0.018);
+    gain.gain.linearRampToValueAtTime(0.001, now + duration / 1000);
     osc.connect(gain).connect(audioCtx.destination);
     osc.start(now);
     osc.stop(now + duration / 1000 + 0.03);
@@ -290,6 +315,21 @@ let levelIdx = 0, player, sprites = [], projectiles = [], particles = [], keys =
 let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, isLoading = false, maxMultSeen = 1;
 let levelTransitioning = false;
 
+// TOUCH CONTROLS
+let joyActive = false;
+let joyForward = 0;
+let joyTurn = 0;
+let currentJoyX = 0, currentJoyY = 0;
+const JOY_RADIUS = 60;
+const joystickContainer = document.getElementById('joystick-container');
+const joystickKnob = document.getElementById('joystick-knob');
+let joyPointerId = null;
+
+let turnActive = false;
+let lastTurnClientX = 0;
+let turnPointerId = null;
+const viewportEl = document.getElementById('viewport');
+
 function startGame() {
     document.getElementById('start-menu').style.display = 'none';
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -329,24 +369,75 @@ function showLevelCard(name, sub) {
     card.style.opacity = 1; setTimeout(() => card.style.opacity = 0, 2500);
 }
 
-const bind = (id, k) => {
-    let el = document.getElementById(id);
-    const stop = (e) => { e.preventDefault(); keys[k] = false; };
-    const start = (e) => { e.preventDefault(); keys[k] = true; };
-    el.addEventListener('pointerdown', start); el.addEventListener('pointerup', stop);
-    el.addEventListener('pointerleave', stop);
-};
-[['up','KeyW'],['down','KeyS'],['left','KeyA'],['right','KeyD'],['btn-sprint','ShiftLeft']].forEach(p => bind(p[0], p[1]));
-
 window.onkeydown = e => { keys[e.code] = true; if (e.code === 'Space') doBoop(); };
 window.onkeyup = e => keys[e.code] = false;
-document.getElementById('btn-boop').onclick = doBoop;
+
+const boopBtn = document.getElementById('btn-boop');
+boopBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBoop(); });
+
+// JOYSTICK
+function setupJoystick() {
+    joystickContainer.addEventListener('pointerdown', e => {
+        if (joyPointerId !== null) return;
+        joyPointerId = e.pointerId;
+        joyActive = true;
+        const rect = joystickContainer.getBoundingClientRect();
+        joyCenterX = rect.left + rect.width / 2;
+        joyCenterY = rect.top + rect.height / 2;
+        updateJoystick(e);
+    });
+
+    document.addEventListener('pointermove', e => {
+        if (joyActive && joyPointerId === e.pointerId) updateJoystick(e);
+    });
+
+    document.addEventListener('pointerup', e => {
+        if (joyPointerId === e.pointerId) {
+            joyActive = false;
+            joyForward = 0;
+            joyTurn = 0;
+            currentJoyX = 0;
+            currentJoyY = 0;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            joyPointerId = null;
+        }
+    });
+}
+
+function updateJoystick(e) {
+    let dx = e.clientX - joyCenterX;
+    let dy = e.clientY - joyCenterY;
+    let dist = Math.hypot(dx, dy);
+    if (dist > JOY_RADIUS) { dx = dx * JOY_RADIUS / dist; dy = dy * JOY_RADIUS / dist; }
+    currentJoyX = dx; currentJoyY = dy;
+    joyForward = -dy / JOY_RADIUS;
+    joyTurn = dx / JOY_RADIUS;
+    joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+}
+setupJoystick();
+
+// VIEWPORT TURN
+viewportEl.addEventListener('pointerdown', e => {
+    if (e.target.id === 'm-canvas' || e.target.id === 'player-face') return;
+    if (turnPointerId !== null) return;
+    turnPointerId = e.pointerId;
+    turnActive = true;
+    lastTurnClientX = e.clientX;
+});
+document.addEventListener('pointermove', e => {
+    if (turnActive && turnPointerId === e.pointerId) {
+        player.dir += (e.clientX - lastTurnClientX) * 0.003;
+        lastTurnClientX = e.clientX;
+    }
+});
+document.addEventListener('pointerup', e => {
+    if (turnPointerId === e.pointerId) { turnActive = false; turnPointerId = null; }
+});
 
 function doBoop() {
-    if (!gameActive || attackAnim > 0 || isLoading) return;
+    if (!gameActive || isLoading) return;
     attackAnim = 1.0;
     
-    // ✨ Magical soft sparkle boop (ascending chimes)
     playSound('sine', 920, 55, 0.28);
     setTimeout(() => playSound('sine', 1240, 65, 0.26), 28);
     setTimeout(() => playSound('triangle', 1580, 85, 0.22), 62);
@@ -362,12 +453,12 @@ function doBoop() {
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
         if (s.alive && d < 6 && angleDiff < 0.85 && !s.pickup && s.e !== "🌀") {
             s.hp--;
-            playSound('triangle', 520, 95, 0.19); // soft magical hit
+            playSound('triangle', 520, 95, 0.19);
             player.combo = Math.min(100, player.combo + 28);
             spawnParticles(s.x, s.y, "✨", 6);
             if (s.hp <= 0) {
                 s.alive = false;
-                playSound('sine', 340, 380, 0.26, -240); // gentle descending poof
+                playSound('sine', 340, 380, 0.26, -240);
                 player.score += (s.type === 'boss' ? 2000 : 220) * player.mult;
                 spawnParticles(s.x, s.y, "☁️", 14);
                 if (!s.type && Math.random() < 0.35) sprites.push({x: s.x, y: s.y, e: "🧁", pickup: true, alive: true});
@@ -383,16 +474,24 @@ function spawnParticles(x, y, char, count) {
     }
 }
 
+// STRICT PROGRESSION: PORTAL ONLY AFTER ALL ENEMIES ARE DESTROYED
 function checkWin() {
     const enemiesRemaining = sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
     if (!enemiesRemaining) {
-        if (MAPS[levelIdx].isSecret) {
-            MAPS[levelIdx].m[2][2] = 9;
-            if (!sprites.some(s => s.e === "🌀")) sprites.push({x: 2.5, y: 2.5, e: "🌀", alive: true, scale: 2.0});
-        } else if (levelIdx < MAPS.length - 1 && levelIdx !== 3) {
-            loadLevel(++levelIdx);
-        } else if (levelIdx === 4) {
+        if (levelIdx === 4) {
             showEnd("VICTORY! 🏆");
+            return;
+        }
+        if (!sprites.some(s => s.e === "🌀")) {
+            let exitX = 6.5, exitY = 5.5;
+            if (levelIdx === 2) { exitX = 8.5; exitY = 3.5; }
+            if (levelIdx === 3) { exitX = 2.5; exitY = 2.5; }
+            const map = MAPS[levelIdx].m;
+            const tx = Math.floor(exitX), ty = Math.floor(exitY);
+            if (map[ty] && map[ty][tx] === 0) map[ty][tx] = 9;
+            sprites.push({x: exitX, y: exitY, e: "🌀", alive: true, scale: 2.0});
+            playSound('sine', 880, 120, 0.32);
+            setTimeout(() => playSound('sine', 1320, 250, 0.28), 80);
         }
     }
 }
@@ -440,11 +539,15 @@ function update() {
     if (shake > 0) shake -= 0.12;
 
     let isSprinting = keys['ShiftLeft'];
-    let moveSpeed = isSprinting ? 0.085 : 0.038, rotSpeed = 0.045;
+    let rotSpeed = 0.045;
+
     if (keys['KeyA']) player.dir -= rotSpeed;
     if (keys['KeyD']) player.dir += rotSpeed;
 
-    let dx = Math.cos(player.dir) * moveSpeed, dy = Math.sin(player.dir) * moveSpeed;
+    let joyDist = joyActive ? Math.hypot(currentJoyX, currentJoyY) / JOY_RADIUS : 0;
+    if (joyDist > 0.68) isSprinting = true;
+
+    let moveSpeed = isSprinting ? 0.085 : 0.038;
     const map = MAPS[levelIdx].m;
 
     const canMove = (x, y) => {
@@ -453,8 +556,7 @@ function update() {
         if (map[ny][nx] === 9) {
             const noEnemies = !sprites.some(s => s.alive && !s.pickup && s.e !== "🌀");
             if (noEnemies && !levelTransitioning) {
-                if (levelIdx === 3) loadLevel(4);
-                else if (levelIdx === 2) loadLevel(3);
+                loadLevel(levelIdx + 1);
             }
             return false;
         }
@@ -462,6 +564,9 @@ function update() {
     };
 
     isMoving = false;
+
+    let dx = Math.cos(player.dir) * moveSpeed;
+    let dy = Math.sin(player.dir) * moveSpeed;
     if (keys['KeyW']) {
         if (canMove(player.x + dx, player.y)) { player.x += dx; isMoving = true; }
         if (canMove(player.x, player.y + dy)) { player.y += dy; isMoving = true; }
@@ -469,6 +574,20 @@ function update() {
     if (keys['KeyS']) {
         if (canMove(player.x - dx, player.y)) { player.x -= dx; isMoving = true; }
         if (canMove(player.x, player.y - dy)) { player.y -= dy; isMoving = true; }
+    }
+
+    if (joyActive) {
+        let fwd = joyForward * moveSpeed * 1.05;
+        let turnAmount = joyTurn * 0.085;
+        player.dir += turnAmount;
+
+        if (Math.abs(fwd) > 0.01) {
+            let fwdDx = Math.cos(player.dir) * fwd;
+            let fwdDy = Math.sin(player.dir) * fwd;
+            if (canMove(player.x + fwdDx, player.y)) player.x += fwdDx;
+            if (canMove(player.x, player.y + fwdDy)) player.y += fwdDy;
+            isMoving = true;
+        }
     }
 
     if (isMoving) bob += isSprinting ? 0.28 : 0.16; else bob = Math.max(0, bob - 0.12);
@@ -497,11 +616,13 @@ function update() {
         if (s.atkTimer > 0) s.atkTimer -= 16;
         let d = Math.sqrt((s.x-player.x)**2 + (s.y-player.y)**2);
         
-        if (s.e === "🌀" && d < 0.6) checkWin();
+        if (s.e === "🌀" && d < 0.6) {
+            loadLevel(levelIdx + 1);
+            return;
+        }
         if (s.pickup && d < 0.6) { 
             s.alive = false; 
             player.hp = Math.min(45, player.hp + 5); 
-            // ✨ Soft magical pickup chimes
             playSound('sine', 1180, 55, 0.27);
             setTimeout(() => playSound('sine', 1620, 70, 0.27), 35);
             setTimeout(() => playSound('sine', 2040, 85, 0.23), 85);
@@ -530,7 +651,7 @@ function update() {
         p.x += p.vx; p.y += p.vy; p.l--;
         if (Math.sqrt((p.x-player.x)**2 + (p.y-player.y)**2) < 0.45) {
             player.hp--; player.combo = 0; shake = 1.1;
-            playSound('triangle', 410, 135, 0.23, -110); // soft sad magical hurt
+            playSound('triangle', 410, 135, 0.23, -110);
             if (player.hp <= 0) showEnd("BOOPED! 🧸");
             projectiles.splice(i, 1);
         } else if (p.l <= 0 || map[Math.floor(p.y)]?.[Math.floor(p.x)] === 1) {
@@ -547,7 +668,6 @@ function draw() {
     ctx.translate(0, currentBob);
     if (shake > 0) ctx.translate((Math.random()-0.5)*22*shake, (Math.random()-0.5)*22*shake);
 
-    // Gradient sky & floor
     const skyGrad = ctx.createLinearGradient(0, -100, 0, 160);
     skyGrad.addColorStop(0, levelIdx === 4 ? '#0a0825' : '#87CEEB');
     skyGrad.addColorStop(1, '#221122');
