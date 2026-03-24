@@ -138,6 +138,26 @@
         }
         #player-face { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
+        /* Utility Buttons for Pause and Fullscreen */
+        .util-btn {
+            position: absolute;
+            top: 10px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid var(--pink);
+            border-radius: 10px;
+            color: white;
+            z-index: 30;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        #pause-toggle { left: 10px; }
+        #fullscreen-toggle { left: 64px; }
+
         #top-hud-overlay {
             position: absolute;
             top: 12px;
@@ -257,7 +277,7 @@
             transition: all 0.2s; font-size: 18px;
         }
         #share-btn { background: var(--sky); box-shadow: 0 0 20px var(--sky); }
-        #retry-btn { background: var(--hot-pink); box-shadow: 0 0 20px var(--hot-pink); }
+        #retry-btn, #resume-btn { background: var(--hot-pink); box-shadow: 0 0 20px var(--hot-pink); }
 
         /* LANDSCAPE FIX FOR MOBILE MENU */
         @media (orientation: landscape) and (max-height: 450px) {
@@ -286,7 +306,6 @@
             }
             .diff-btn small { display: none; }
             
-            /* Viewport specific controls adjustments for landscape */
             #top-hud-overlay { top: 8px; padding: 6px 12px; }
             #joystick-container { width: 138px; height: 138px; }
             #joystick-knob { width: 54px; height: 54px; }
@@ -324,6 +343,9 @@
     </div>
 
     <div id="viewport">
+        <button id="pause-toggle" class="util-btn" onclick="togglePause()">⏸️</button>
+        <button id="fullscreen-toggle" class="util-btn" onclick="toggleFullscreen()">🖥️</button>
+
         <canvas id="c"></canvas>
         <div id="vignette"></div>
         <div id="level-card"><p id="level-num"></p><h2 id="level-name"></h2></div>
@@ -354,6 +376,14 @@
         </div>
     </div>
 
+    <div id="pause-menu" class="overlay">
+        <h1>GAME PAUSED</h1>
+        <div class="overlay-btns">
+            <button id="resume-btn" onclick="togglePause()">RESUME QUEST</button>
+            <button onclick="returnToMenu()">QUIT TO MENU</button>
+        </div>
+    </div>
+
     <div id="overlay" class="overlay">
         <h1 id="status-msg">GAME OVER</h1>
         <div id="final-stats"></div>
@@ -374,8 +404,10 @@ const pCtx = pCanvas.getContext('2d');
 canvas.width = 400; canvas.height = 300; mCanvas.width = 80; mCanvas.height = 80;
 
 let audioCtx;
+let paused = false;
+
 function playSound(type = 'sine', freq = 440, duration = 200, vol = 0.25, sweep = 0) {
-    if (!audioCtx) return;
+    if (!audioCtx || paused) return;
     const osc = audioCtx.createOscillator();
     osc.type = type;
     const now = audioCtx.currentTime;
@@ -441,6 +473,30 @@ let joyPointerId = null;
 let turnActive = false, lastTurnClientX = 0, turnPointerId = null;
 const viewportEl = document.getElementById('viewport');
 
+function togglePause() {
+    if (!gameActive || isLoading) return;
+    paused = !paused;
+    document.getElementById('pause-menu').style.display = paused ? 'flex' : 'none';
+    if (audioCtx) {
+        if (paused) audioCtx.suspend();
+        else audioCtx.resume();
+    }
+}
+
+function toggleFullscreen() {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+
+    const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+    if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+        requestFullScreen.call(docEl);
+    } else {
+        cancelFullScreen.call(doc);
+    }
+}
+
 function selectDifficulty(mult) {
     difficultyMult = mult;
     document.getElementById('start-menu').style.display = 'none';
@@ -451,16 +507,19 @@ function selectDifficulty(mult) {
 
 function returnToMenu() {
     gameActive = false;
+    paused = false;
     sprites = []; projectiles = []; particles = [];
     document.getElementById('overlay').style.display = 'none';
+    document.getElementById('pause-menu').style.display = 'none';
     document.getElementById('start-menu').style.display = 'flex';
 }
 
 function initGame() {
     player = { x: 0, y: 0, dir: 0, hp: 15, score: 0, combo: 0, mult: 1 };
     levelIdx = 0; gameActive = true; particles = []; isLoading = false; maxMultSeen = 1; levelTransitioning = false;
-    portalActive = false; hitFlash = 0;
+    portalActive = false; hitFlash = 0; paused = false;
     document.getElementById('overlay').style.display = 'none';
+    document.getElementById('pause-menu').style.display = 'none';
     loadLevel(0);
 }
 
@@ -555,17 +614,22 @@ function showLevelCard(name, sub) {
     card.style.opacity = 1; setTimeout(() => card.style.opacity = 0, 2500);
 }
 
-window.onkeydown = e => { keys[e.code] = true; if (e.code === 'Space') doBoop(); };
+window.onkeydown = e => { 
+    if (e.code === 'Escape') togglePause();
+    if (paused) return;
+    keys[e.code] = true; 
+    if (e.code === 'Space') doBoop(); 
+};
 window.onkeyup = e => keys[e.code] = false;
 
 const boopBtn = document.getElementById('btn-boop');
-boopBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBoop(); });
-boopBtn.addEventListener('touchstart', e => { e.preventDefault(); doBoop(); }, { passive: false });
+boopBtn.addEventListener('pointerdown', e => { e.preventDefault(); if (!paused) doBoop(); });
+boopBtn.addEventListener('touchstart', e => { e.preventDefault(); if (!paused) doBoop(); }, { passive: false });
 
 let joyCenterX, joyCenterY;
 function setupJoystick() {
     joystickContainer.addEventListener('pointerdown', e => {
-        if (joyPointerId !== null) return;
+        if (paused || joyPointerId !== null) return;
         joyPointerId = e.pointerId;
         joyActive = true;
         const rect = joystickContainer.getBoundingClientRect();
@@ -592,7 +656,7 @@ function updateJoystick(e) {
 setupJoystick();
 
 viewportEl.addEventListener('pointerdown', e => {
-    if (e.target.id === 'm-canvas' || e.target.id === 'player-face') return;
+    if (paused || e.target.id === 'm-canvas' || e.target.id === 'player-face' || e.target.className.includes('util-btn')) return;
     if (turnPointerId !== null) return;
     turnPointerId = e.pointerId; turnActive = true; lastTurnClientX = e.clientX;
 });
@@ -605,7 +669,7 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerup', e => { if (turnPointerId === e.pointerId) { turnActive = false; turnPointerId = null; } });
 
 function doBoop() {
-    if (!gameActive || isLoading) return;
+    if (!gameActive || isLoading || paused) return;
     attackAnim = 1.0;
     playSound('sine', 920, 55, 0.28);
     setTimeout(() => playSound('sine', 1240, 65, 0.26), 28);
@@ -688,7 +752,7 @@ function showEnd(msg) {
 document.getElementById('retry-btn').onclick = returnToMenu;
 
 function update() {
-    if (!gameActive || isLoading) return;
+    if (!gameActive || isLoading || paused) return;
     if (attackAnim > 0) attackAnim -= 0.12;
     if (shake > 0) shake -= 0.12;
 
@@ -888,7 +952,7 @@ function drawMinimap() {
 }
 
 function loop() {
-    if (gameActive) {
+    if (gameActive && !paused) {
         update();
         draw();
     }
