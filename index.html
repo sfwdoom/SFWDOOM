@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>SFWDOOM: Plushie Edition</title>
-    <meta name="description" content="Enter the forest and start your Plushie Quest in this retro raycasting adventure!">
+    <title>SFWDOOM: Plushie Quest Pro</title>
+    <meta name="description" content="Enter the forest and start your Plushie Quest in this optimized retro raycasting adventure!">
 
     <style>
         :root { 
@@ -123,7 +123,6 @@
         }
         #player-face { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
-        /* === OVERLAY HUD (top) === */
         #top-hud-overlay {
             position: absolute;
             top: 12px;
@@ -140,7 +139,6 @@
             max-width: 92%;
         }
 
-        /* === OVERLAY CONTROLS (bottom) — semi-transparent as requested === */
         #bottom-controls-overlay {
             position: absolute;
             bottom: max(12px, env(safe-area-inset-bottom));
@@ -154,9 +152,7 @@
             opacity: 0.72;
             pointer-events: none;
         }
-        #bottom-controls-overlay > * {
-            pointer-events: auto;
-        }
+        #bottom-controls-overlay > * { pointer-events: auto; }
 
         #controls {
             display: flex; 
@@ -214,7 +210,6 @@
             box-shadow: 0 0 25px var(--hot-pink);
         }
 
-        /* HUD inside top overlay */
         #hud { 
             display: flex; flex-direction: column; align-items: center; 
             width: 100%; max-width: 460px;
@@ -249,18 +244,13 @@
         #share-btn { background: var(--sky); box-shadow: 0 0 20px var(--sky); }
         #retry-btn { background: var(--hot-pink); box-shadow: 0 0 20px var(--hot-pink); }
 
-        /* === LANDSCAPE: Boop button pushed ALL THE WAY to the right edge for perfect right-thumb access === */
         @media (orientation: landscape) {
             #top-hud-overlay { top: 8px; padding: 6px 12px; }
             #joystick-container { width: 138px; height: 138px; }
             #joystick-knob { width: 54px; height: 54px; }
             #btn-boop { width: 88px; height: 88px; font-size: 13px; }
             #bottom-controls-overlay { padding: 0 14px 6px; }
-            
-            /* Force controls to span full screen width so Boop sits at the extreme right */
-            #controls {
-                max-width: none;
-            }
+            #controls { max-width: none; }
         }
     </style>
 </head>
@@ -268,7 +258,7 @@
     <div id="start-menu">
         <div class="logo-container">
             <h1 class="logo-main">SFWDOOM</h1>
-            <p class="logo-sub">Plushie Quest Edition</p>
+            <p class="logo-sub">Plushie Quest Pro</p>
         </div>
         <button class="start-btn" onclick="startGame()">ENTER THE FOREST</button>
     </div>
@@ -317,8 +307,6 @@
 const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
 const mCanvas = document.getElementById('m-canvas'), mCtx = mCanvas.getContext('2d');
 const vignette = document.getElementById('vignette');
-
-// OFFSCREEN CANVAS FOR PROCEDURAL WALL TEXTURE
 const pCanvas = document.createElement('canvas');
 pCanvas.width = 256; pCanvas.height = 256;
 const pCtx = pCanvas.getContext('2d');
@@ -380,22 +368,16 @@ const MAPS = [
 
 let levelIdx = 0, player, sprites = [], projectiles = [], particles = [], keys = {}, zBuf = new Array(400);
 let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, isLoading = false, maxMultSeen = 1;
-let levelTransitioning = false;
-let portalActive = false;  
+let levelTransitioning = false, portalActive = false;  
+let hitFlash = 0; // New Feedback loop variable
 
-// TOUCH CONTROLS
-let joyActive = false;
-let joyForward = 0;
-let joyTurn = 0;
-let currentJoyX = 0, currentJoyY = 0;
+let joyActive = false, joyForward = 0, joyTurn = 0, currentJoyX = 0, currentJoyY = 0;
 const JOY_RADIUS = 60;
 const joystickContainer = document.getElementById('joystick-container');
 const joystickKnob = document.getElementById('joystick-knob');
 let joyPointerId = null;
 
-let turnActive = false;
-let lastTurnClientX = 0;
-let turnPointerId = null;
+let turnActive = false, lastTurnClientX = 0, turnPointerId = null;
 const viewportEl = document.getElementById('viewport');
 
 function startGame() {
@@ -409,7 +391,7 @@ function startGame() {
 function initGame() {
     player = { x: 0, y: 0, dir: 0, hp: 15, score: 0, combo: 0, mult: 1 };
     levelIdx = 0; gameActive = true; particles = []; isLoading = false; maxMultSeen = 1; levelTransitioning = false;
-    portalActive = false;  
+    portalActive = false; hitFlash = 0;
     document.getElementById('overlay').style.display = 'none';
     loadLevel(0);
 }
@@ -418,17 +400,13 @@ function loadLevel(idx) {
     if (levelTransitioning || idx >= MAPS.length) return;
     levelTransitioning = true;
     isLoading = true;
-    
     levelIdx = idx; const l = MAPS[idx];
     player.x = l.start[0]; player.y = l.start[1];
     portalActive = false;  
-    
     sprites = (l.enemies || []).map(e => ({...e, hp: 3, alive: true, lastShot: Date.now() + 2000, atkTimer: 0}));
     if (l.boss) sprites.push({...l.boss, hp: 12, alive: true, type: 'boss', lastShot: Date.now(), atkTimer: 0, strafeDir: 1, strafeTimer: 0});
-    
     projectiles = []; particles = [];
     showLevelCard(l.n, l.isSecret ? "SECRET FOUND!" : "LEVEL " + (idx + 1));
-    
     setTimeout(() => { isLoading = false; levelTransitioning = false; }, 500);
 }
 
@@ -446,7 +424,6 @@ const boopBtn = document.getElementById('btn-boop');
 boopBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBoop(); });
 boopBtn.addEventListener('touchstart', e => { e.preventDefault(); doBoop(); }, { passive: false });
 
-// JOYSTICK
 let joyCenterX, joyCenterY;
 function setupJoystick() {
     joystickContainer.addEventListener('pointerdown', e => {
@@ -458,43 +435,28 @@ function setupJoystick() {
         joyCenterY = rect.top + rect.height / 2;
         updateJoystick(e);
     });
-
-    document.addEventListener('pointermove', e => {
-        if (joyActive && joyPointerId === e.pointerId) updateJoystick(e);
-    });
-
+    document.addEventListener('pointermove', e => { if (joyActive && joyPointerId === e.pointerId) updateJoystick(e); });
     document.addEventListener('pointerup', e => {
         if (joyPointerId === e.pointerId) {
-            joyActive = false;
-            joyForward = 0;
-            joyTurn = 0;
-            currentJoyX = 0;
-            currentJoyY = 0;
-            joystickKnob.style.transform = 'translate(-50%, -50%)';
-            joyPointerId = null;
+            joyActive = false; joyForward = 0; joyTurn = 0; currentJoyX = 0; currentJoyY = 0;
+            joystickKnob.style.transform = 'translate(-50%, -50%)'; joyPointerId = null;
         }
     });
 }
-
 function updateJoystick(e) {
-    let dx = e.clientX - joyCenterX;
-    let dy = e.clientY - joyCenterY;
+    let dx = e.clientX - joyCenterX; let dy = e.clientY - joyCenterY;
     let dist = Math.hypot(dx, dy);
     if (dist > JOY_RADIUS) { dx = dx * JOY_RADIUS / dist; dy = dy * JOY_RADIUS / dist; }
     currentJoyX = dx; currentJoyY = dy;
-    joyForward = -dy / JOY_RADIUS;
-    joyTurn = dx / JOY_RADIUS;
+    joyForward = -dy / JOY_RADIUS; joyTurn = dx / JOY_RADIUS;
     joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
 }
 setupJoystick();
 
-// VIEWPORT TURN
 viewportEl.addEventListener('pointerdown', e => {
     if (e.target.id === 'm-canvas' || e.target.id === 'player-face') return;
     if (turnPointerId !== null) return;
-    turnPointerId = e.pointerId;
-    turnActive = true;
-    lastTurnClientX = e.clientX;
+    turnPointerId = e.pointerId; turnActive = true; lastTurnClientX = e.clientX;
 });
 document.addEventListener('pointermove', e => {
     if (turnActive && turnPointerId === e.pointerId) {
@@ -502,14 +464,11 @@ document.addEventListener('pointermove', e => {
         lastTurnClientX = e.clientX;
     }
 });
-document.addEventListener('pointerup', e => {
-    if (turnPointerId === e.pointerId) { turnActive = false; turnPointerId = null; }
-});
+document.addEventListener('pointerup', e => { if (turnPointerId === e.pointerId) { turnActive = false; turnPointerId = null; } });
 
 function doBoop() {
     if (!gameActive || isLoading) return;
     attackAnim = 1.0;
-    
     playSound('sine', 920, 55, 0.28);
     setTimeout(() => playSound('sine', 1240, 65, 0.26), 28);
     setTimeout(() => playSound('triangle', 1580, 85, 0.22), 62);
@@ -525,6 +484,7 @@ function doBoop() {
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
         if (s.alive && d < 6 && angleDiff < 0.85 && !s.pickup) {
             s.hp--;
+            hitFlash = 1.0; // TRIGGER HIT FEEDBACK
             playSound('triangle', 520, 95, 0.19);
             player.combo = Math.min(100, player.combo + 28);
             spawnParticles(s.x, s.y, "✨", 6);
@@ -549,33 +509,19 @@ function spawnParticles(x, y, char, count) {
 function checkWin() {
     const enemiesRemaining = sprites.some(s => s.alive && !s.pickup);
     if (!enemiesRemaining) {
-        if (levelIdx === 4) {
-            showEnd("VICTORY! 🏆");
-            return;
-        }
+        if (levelIdx === 4) { showEnd("VICTORY! 🏆"); return; }
         if (!portalActive) {
-            let exitX = 6.5, exitY = 5.5; // Level 0
-            if (levelIdx === 1) { exitX = 6.5; exitY = 1.5; } // Level 1
-            if (levelIdx === 2) { exitX = 7.5; exitY = 3.5; } // Level 2
-            
-            // Level 3 (Sugar Sanctuary) - BUG FIX
-            // Shifted the portal coordinates into the solid North wall so the player
-            // cannot spawn directly inside the wall block and glitch the texture.
+            let exitX = 6.5, exitY = 5.5;
+            if (levelIdx === 1) { exitX = 6.5; exitY = 1.5; }
+            if (levelIdx === 2) { exitX = 7.5; exitY = 3.5; }
             if (levelIdx === 3) { exitX = 2.5; exitY = 0.5; } 
-            
             const map = MAPS[levelIdx].m;
             const tx = Math.floor(exitX), ty = Math.floor(exitY);
-            
-            // Re-activate the wall block cleanly by checking if the array index exists
             if (map[ty] && map[ty][tx] !== undefined) map[ty][tx] = 9;
-            
             portalActive = true; 
-
-            // Magical reveal effect
             playSound('sine', 880, 120, 0.32);
             setTimeout(() => playSound('sine', 1320, 250, 0.28), 80);
             spawnParticles(exitX, exitY, "✨", 25);
-            spawnParticles(exitX, exitY, "🌟", 12);
         }
     }
 }
@@ -585,32 +531,18 @@ function showEnd(msg) {
     const overlay = document.getElementById('overlay');
     const shareBtn = document.getElementById('share-btn');
     const isWin = msg.includes("VICTORY");
-    
     overlay.style.borderColor = isWin ? "var(--sky)" : "var(--hot-pink)";
-    overlay.style.boxShadow = isWin ? "inset 0 0 60px rgba(79,195,247,0.4)" : "inset 0 0 60px rgba(255,20,147,0.4)";
-    
     let highScore = parseInt(localStorage.getItem('sfwDoomHiScore') || '0');
     let currentScore = Math.floor(player.score);
-    if (currentScore > highScore) {
-        localStorage.setItem('sfwDoomHiScore', currentScore);
-        highScore = currentScore;
-    }
-    
+    if (currentScore > highScore) { localStorage.setItem('sfwDoomHiScore', currentScore); highScore = currentScore; }
     overlay.style.display = 'flex';
     document.getElementById('status-msg').innerText = msg;
     document.getElementById('final-stats').innerHTML = `Final Score: ${currentScore}<br><span style="color:var(--pink);">Best: ${highScore}</span>`;
-
     shareBtn.onclick = () => {
-        const comboBadge = maxMultSeen >= 5 ? "🔥 COMBO MASTER 🔥\n" : "";
-        const shareText = isWin 
-            ? `🏆 I BEAT SFWDOOM Plushie Quest!\n${comboBadge}✨ Score: ${currentScore}\n📍 ${MAPS[levelIdx].n}`
-            : `🧸 I got booped in SFWDOOM!\n${comboBadge}✨ Score: ${currentScore}\n📍 ${MAPS[levelIdx].n}`;
-        
-        const fullPost = `${shareText}\n\nEnter the Forest → https://sfwdoom.fun 🪄🧸`;
+        const fullPost = `${isWin ? '🏆' : '🧸'} Score: ${currentScore} in SFWDOOM!\nhttps://sfwdoom.fun`;
         navigator.clipboard.writeText(fullPost).then(() => {
             shareBtn.innerText = "Opening X... ✨";
             window.open(`https://x.com/intent/post?text=${encodeURIComponent(fullPost)}`, '_blank');
-            setTimeout(() => shareBtn.innerText = "Share Your Quest 🪄", 2500);
         });
     };
 }
@@ -624,50 +556,31 @@ function update() {
 
     let isSprinting = keys['ShiftLeft'];
     let rotSpeed = 0.045;
-
     if (keys['KeyA']) player.dir -= rotSpeed;
     if (keys['KeyD']) player.dir += rotSpeed;
 
     let joyDist = joyActive ? Math.hypot(currentJoyX, currentJoyY) / JOY_RADIUS : 0;
     if (joyDist > 0.68) isSprinting = true;
-
     let moveSpeed = isSprinting ? 0.085 : 0.038;
     const map = MAPS[levelIdx].m;
 
     const canMove = (x, y) => {
         let nx = Math.floor(x), ny = Math.floor(y);
         if (!map[ny] || map[ny][nx] === undefined) return false;
-        if (map[ny][nx] === 9) {
-            const noEnemies = !sprites.some(s => s.alive && !s.pickup);
-            if (noEnemies && !levelTransitioning) {
-                loadLevel(levelIdx + 1);
-            }
-            return false;
-        }
+        if (map[ny][nx] === 9) { if (!sprites.some(s => s.alive && !s.pickup) && !levelTransitioning) loadLevel(levelIdx + 1); return false; }
         return map[ny][nx] === 0;
     };
 
     isMoving = false;
-
-    let dx = Math.cos(player.dir) * moveSpeed;
-    let dy = Math.sin(player.dir) * moveSpeed;
-    if (keys['KeyW']) {
-        if (canMove(player.x + dx, player.y)) { player.x += dx; isMoving = true; }
-        if (canMove(player.x, player.y + dy)) { player.y += dy; isMoving = true; }
-    }
-    if (keys['KeyS']) {
-        if (canMove(player.x - dx, player.y)) { player.x -= dx; isMoving = true; }
-        if (canMove(player.x, player.y - dy)) { player.y -= dy; isMoving = true; }
-    }
+    let dx = Math.cos(player.dir) * moveSpeed; let dy = Math.sin(player.dir) * moveSpeed;
+    if (keys['KeyW']) { if (canMove(player.x + dx, player.y)) { player.x += dx; isMoving = true; } if (canMove(player.x, player.y + dy)) { player.y += dy; isMoving = true; } }
+    if (keys['KeyS']) { if (canMove(player.x - dx, player.y)) { player.x -= dx; isMoving = true; } if (canMove(player.x, player.y - dy)) { player.y -= dy; isMoving = true; } }
 
     if (joyActive) {
         let fwd = joyForward * moveSpeed * 1.05;
-        let turnAmount = joyTurn * 0.085;
-        player.dir += turnAmount;
-
+        player.dir += joyTurn * 0.085;
         if (Math.abs(fwd) > 0.01) {
-            let fwdDx = Math.cos(player.dir) * fwd;
-            let fwdDy = Math.sin(player.dir) * fwd;
+            let fwdDx = Math.cos(player.dir) * fwd; let fwdDy = Math.sin(player.dir) * fwd;
             if (canMove(player.x + fwdDx, player.y)) player.x += fwdDx;
             if (canMove(player.x, player.y + fwdDy)) player.y += fwdDy;
             isMoving = true;
@@ -675,9 +588,7 @@ function update() {
     }
 
     if (isMoving) bob += isSprinting ? 0.28 : 0.16; else bob = Math.max(0, bob - 0.12);
-
     vignette.style.opacity = player.hp <= 5 ? (0.45 + Math.sin(Date.now() * 0.06) * 0.45) : 0;
-
     player.combo = Math.max(0, player.combo - 0.12);
     player.mult = Math.floor(player.combo / 20) + 1;
     if (player.mult > maxMultSeen) maxMultSeen = player.mult;
@@ -699,22 +610,10 @@ function update() {
         if (!s.alive) return;
         if (s.atkTimer > 0) s.atkTimer -= 16;
         let d = Math.sqrt((s.x-player.x)**2 + (s.y-player.y)**2);
-        
-        if (s.pickup && d < 0.6) { 
-            s.alive = false; 
-            player.hp = Math.min(45, player.hp + 5); 
-            playSound('sine', 1180, 55, 0.27);
-            setTimeout(() => playSound('sine', 1620, 70, 0.27), 35);
-            setTimeout(() => playSound('sine', 2040, 85, 0.23), 85);
-            checkWin(); 
-        }
-        
+        if (s.pickup && d < 0.6) { s.alive = false; player.hp = Math.min(45, player.hp + 5); playSound('sine', 1180, 55, 0.27); checkWin(); }
         if (s.type === 'boss') {
-            s.strafeTimer++;
-            if (s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
-            let sy = s.y + (s.strafeDir * 0.038);
-            if (canMove(s.x, sy)) s.y = sy;
-            
+            s.strafeTimer++; if (s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
+            let sy = s.y + (s.strafeDir * 0.038); if (canMove(s.x, sy)) s.y = sy;
             if (d < 12 && Date.now() - s.lastShot > 1900) {
                 let a = Math.atan2(player.y-s.y, player.x-s.x);
                 projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*0.095, vy:Math.sin(a)*0.095, l:150});
@@ -734,104 +633,70 @@ function update() {
             playSound('triangle', 410, 135, 0.23, -110);
             if (player.hp <= 0) showEnd("BOOPED! 🧸");
             projectiles.splice(i, 1);
-        } else if (p.l <= 0 || map[Math.floor(p.y)]?.[Math.floor(p.x)] === 1) {
-            projectiles.splice(i, 1);
-        }
+        } else if (p.l <= 0 || map[Math.floor(p.y)]?.[Math.floor(p.x)] === 1) projectiles.splice(i, 1);
     });
-
     particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.l -= 0.035; if (p.l <= 0) particles.splice(i, 1); });
 }
 
-// Draw the live animated texture to the offscreen canvas
 function updatePortalTexture() {
-    let t = Date.now() * 0.002;
-    let c = 128; // Center of the 256x256 texture
-    
-    // Deep void background for the wall tile
-    pCtx.fillStyle = "#0a0515";
-    pCtx.fillRect(0, 0, 256, 256);
-    
+    let t = Date.now() * 0.002; let c = 128; pCtx.fillStyle = "#0a0515"; pCtx.fillRect(0, 0, 256, 256);
     let pulse = 1 + Math.sin(t * 2) * 0.08;
-    
-    // Draw the procedural glow
     let rg = pCtx.createRadialGradient(c, c, 0, c, c, 128 * pulse);
-    rg.addColorStop(0, "rgba(255, 255, 255, 0.9)");
-    rg.addColorStop(0.4, "rgba(79, 195, 247, 0.8)"); 
-    rg.addColorStop(0.7, "rgba(255, 20, 147, 0.5)"); 
-    rg.addColorStop(1, "rgba(0, 0, 0, 0)");
-    pCtx.fillStyle = rg;
-    pCtx.fillRect(0, 0, 256, 256);
-
-    // Draw the flat, square image seal over the glow
-    if (assets.portal.complete) {
-        let imgSize = 230 * pulse; 
-        pCtx.drawImage(assets.portal, c - imgSize/2, c - imgSize/2, imgSize, imgSize);
-    }
-
-    // Draw the active pulsating core
-    pCtx.fillStyle = "rgba(255, 255, 255, " + (0.5 + Math.sin(t*4)*0.3) + ")";
-    pCtx.beginPath();
-    pCtx.arc(c, c, 25 * pulse, 0, Math.PI * 2); 
-    pCtx.fill();
+    rg.addColorStop(0, "rgba(255, 255, 255, 0.9)"); rg.addColorStop(0.4, "rgba(79, 195, 247, 0.8)");
+    rg.addColorStop(0.7, "rgba(255, 20, 147, 0.5)"); rg.addColorStop(1, "rgba(0, 0, 0, 0)");
+    pCtx.fillStyle = rg; pCtx.fillRect(0, 0, 256, 256);
+    if (assets.portal.complete) { let imgSize = 230 * pulse; pCtx.drawImage(assets.portal, c - imgSize/2, c - imgSize/2, imgSize, imgSize); }
 }
 
 function draw() {
-    // 1. Update the live wall texture first
     if (portalActive) updatePortalTexture();
-
     ctx.save();
     let currentBob = Math.sin(bob) * 11;
     ctx.translate(0, currentBob);
     if (shake > 0) ctx.translate((Math.random()-0.5)*22*shake, (Math.random()-0.5)*22*shake);
 
     const skyGrad = ctx.createLinearGradient(0, -100, 0, 160);
-    skyGrad.addColorStop(0, levelIdx === 4 ? '#0a0825' : '#87CEEB');
-    skyGrad.addColorStop(1, '#221122');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, -100, 400, 260);
-
+    skyGrad.addColorStop(0, levelIdx === 4 ? '#0a0825' : '#87CEEB'); skyGrad.addColorStop(1, '#221122');
+    ctx.fillStyle = skyGrad; ctx.fillRect(0, -100, 400, 260);
     const floorGrad = ctx.createLinearGradient(0, 150, 0, 350);
-    floorGrad.addColorStop(0, '#111');
-    floorGrad.addColorStop(1, '#000');
-    ctx.fillStyle = floorGrad;
-    ctx.fillRect(0, 150, 400, 200);
+    floorGrad.addColorStop(0, '#111'); floorGrad.addColorStop(1, '#000');
+    ctx.fillStyle = floorGrad; ctx.fillRect(0, 150, 400, 200);
 
-    const map = MAPS[levelIdx].m;
-    const tex = MAPS[levelIdx].tex;
+    const map = MAPS[levelIdx].m; const tex = MAPS[levelIdx].tex;
 
+    // --- DDA OPTIMIZED RAYCASTING & FISH-EYE FIX ---
+    const FOV = 0.66;
     for (let i = 0; i < 400; i++) {
-        let ang = (player.dir - 0.5) + (i / 400), d = 0, hit = 0, side = 0;
-        let rayX = Math.cos(ang), rayY = Math.sin(ang);
-        
-        while (hit === 0 && d < 12) {
-            d += 0.02;
-            let tx = Math.floor(player.x + rayX*d), ty = Math.floor(player.y + rayY*d);
-            if (map[ty] && map[ty][tx]) { 
-                hit = map[ty][tx];
-                side = (Math.abs(player.x + rayX*d - Math.round(player.x + rayX*d)) < Math.abs(player.y + rayY*d - Math.round(player.y + rayY*d))) ? 0 : 1;
-            }
-        }
-        zBuf[i] = d;
-        let h = 300 / (d * Math.cos(ang - player.dir));
+        let cameraX = 2 * i / 400 - 1;
+        let rayDirX = Math.cos(player.dir) + Math.cos(player.dir + Math.PI/2) * cameraX * FOV;
+        let rayDirY = Math.sin(player.dir) + Math.sin(player.dir + Math.PI/2) * cameraX * FOV;
 
-        let wallX = (side === 0) ? (player.y + rayY*d) : (player.x + rayX*d);
+        let mapX = Math.floor(player.x), mapY = Math.floor(player.y);
+        let deltaDistX = Math.abs(1 / rayDirX), deltaDistY = Math.abs(1 / rayDirY);
+        let stepX, stepY, sideDistX, sideDistY, hit = 0, side = 0;
+
+        if (rayDirX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; } 
+        else { stepX = 1; sideDistX = (mapX + 1.0 - player.x) * deltaDistX; }
+        if (rayDirY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; } 
+        else { stepY = 1; sideDistY = (mapY + 1.0 - player.y) * deltaDistY; }
+
+        while (hit === 0) {
+            if (sideDistX < sideDistY) { sideDistX += deltaDistX; mapX += stepX; side = 0; } 
+            else { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+            if (map[mapY] && map[mapY][mapX] > 0) hit = map[mapY][mapX];
+        }
+
+        let perpWallDist = (side === 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+        zBuf[i] = perpWallDist;
+        let h = 300 / perpWallDist;
+        let wallX = (side === 0) ? player.y + perpWallDist * rayDirY : player.x + perpWallDist * rayDirX;
         wallX -= Math.floor(wallX);
 
-        // Map tile 9 uses the live, offscreen animated canvas!
         const wallTex = (hit === 9) ? pCanvas : tex;
-        let texWidth = wallTex.width || 1;
-        let texX = Math.floor(wallX * texWidth);
-        if (side === 0 && rayX > 0) texX = texWidth - texX - 1;
-        if (side === 1 && rayY < 0) texX = texWidth - texX - 1;
-
-        ctx.globalAlpha = Math.max(0.18, 1 - (d / 12));
+        let texX = Math.floor(wallX * wallTex.width);
+        ctx.globalAlpha = Math.max(0.18, 1 - (perpWallDist / 12));
         ctx.drawImage(wallTex, texX, 0, 1, wallTex.height, i, 150 - h/2, 1, h);
-        
-        if (side === 1 && hit !== 9) {
-            ctx.fillStyle = "rgba(0,0,0,0.35)";
-            ctx.fillRect(i, 150 - h/2, 1, h);
-        }
-        
+        if (side === 1 && hit !== 9) { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(i, 150 - h/2, 1, h); }
         ctx.globalAlpha = 1;
     }
 
@@ -841,14 +706,10 @@ function draw() {
         let ang = Math.atan2(dy, dx) - player.dir;
         while (ang < -Math.PI) ang += Math.PI*2; while (ang > Math.PI) ang -= Math.PI*2;
         if (Math.abs(ang) < 0.8) {
-            let sx = (ang + 0.5) * 400;
+            let sx = (ang / 1.2 + 0.5) * 400; // Adjusted for FOV
             if (zBuf[Math.floor(sx)] > dist) {
-                
-                let safeDist = Math.max(dist, 0.25); 
-                let sz = 300 / safeDist * (s.scale || (s.type === 'boss' ? 2.6 : 1));
-                
+                let sz = 300 / Math.max(dist, 0.25) * (s.scale || (s.type === 'boss' ? 2.6 : 1));
                 ctx.globalAlpha = s.l || 1;
-                
                 if (s.e === "BEAR") ctx.drawImage(s.atkTimer > 0 ? assets.bearAtk : assets.bearIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "SMALL") ctx.drawImage(s.atkTimer > 0 ? assets.smallAtk : assets.smallIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "PRED") ctx.drawImage(s.atkTimer > 0 ? assets.predAtk : assets.predIdle, sx - sz/2, 150 - sz/2, sz, sz);
@@ -860,46 +721,36 @@ function draw() {
         }
     });
 
+    // --- HIT FLASH FEEDBACK ---
+    if (hitFlash > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${hitFlash * 0.3})`;
+        ctx.fillRect(0, 0, 400, 300);
+        hitFlash -= 0.1;
+    }
+
     ctx.restore(); ctx.save();
-    let wandSway = Math.cos(bob * 0.5) * 16;
-    let wandAtkY = Math.sin(attackAnim * Math.PI) * -48;
+    let wandSway = Math.cos(bob * 0.5) * 16; let wandAtkY = Math.sin(attackAnim * Math.PI) * -48;
     ctx.font = "145px serif"; ctx.textAlign = "center";
     ctx.fillText("🪄", 200 + wandSway, 275 + currentBob + wandAtkY);
     ctx.restore();
-
     drawMinimap();
 }
 
 function drawMinimap() {
     mCtx.clearRect(0,0,80,80);
-    const map = MAPS[levelIdx].m, cw = 80 / map[0].length, ch = 80 / map.length;
-    
-    // Draw map tiles
+    const map = MAPS[levelIdx].m; const cw = 80 / map[0].length, ch = 80 / map.length;
     for(let y=0; y<map.length; y++) {
         for(let x=0; x<map[y].length; x++) {
-            if (map[y][x] === 1) {
-                mCtx.fillStyle = "rgba(255,255,255,0.25)";
-                mCtx.fillRect(x*cw, y*ch, cw, ch);
-            } else if (map[y][x] === 9) {
-                // Give the active portal wall block a cyan color on the minimap
-                mCtx.fillStyle = "#00ffff"; 
-                mCtx.fillRect(x*cw, y*ch, cw, ch);
-            }
+            if (map[y][x] === 1) { mCtx.fillStyle = "rgba(255,255,255,0.25)"; mCtx.fillRect(x*cw, y*ch, cw, ch); } 
+            else if (map[y][x] === 9) { mCtx.fillStyle = "#00ffff"; mCtx.fillRect(x*cw, y*ch, cw, ch); }
         }
     }
-    
-    sprites.forEach(s => { if(s.alive) {
-        mCtx.fillStyle = s.pickup ? "#00ffff" : "#ff3366";
-        mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2.5, 0, Math.PI*2); mCtx.fill();
-    }});
+    sprites.forEach(s => { if(s.alive) { mCtx.fillStyle = s.pickup ? "#00ffff" : "#ff3366"; mCtx.beginPath(); mCtx.arc(s.x*cw, s.y*ch, 2.5, 0, Math.PI*2); mCtx.fill(); }});
     mCtx.fillStyle = "#44ff88"; mCtx.beginPath(); mCtx.arc(player.x*cw, player.y*ch, 3.5, 0, Math.PI*2); mCtx.fill();
 }
 
 function loop() { if(gameActive) { update(); draw(); } requestAnimationFrame(loop); }
-
-// MOBILE ROTATION FIX
 window.addEventListener('resize', () => { document.documentElement.style.height = '100dvh'; });
-window.addEventListener('orientationchange', () => { setTimeout(() => document.documentElement.style.height = '100dvh', 150); });
 </script>
 </body>
 </html>
