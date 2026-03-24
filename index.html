@@ -45,7 +45,7 @@
             color: white; 
         }
 
-        .logo-container { text-align: center; margin-bottom: 40px; pointer-events: none; }
+        .logo-container { text-align: center; margin-bottom: 30px; pointer-events: none; }
         .logo-main { 
             font-size: 64px; 
             font-weight: 900; 
@@ -63,9 +63,9 @@
             text-shadow: 0 0 15px var(--sky);
         }
         
-        .start-btn { 
-            padding: 20px 60px; 
-            font-size: 24px; 
+        .start-btn, .diff-btn { 
+            padding: 18px 40px; 
+            font-size: 21px; 
             background: var(--hot-pink); 
             color: white; 
             border: none; 
@@ -74,9 +74,23 @@
             box-shadow: 0 8px #a30b5d, 0 0 25px var(--hot-pink); 
             transition: all 0.1s; 
             animation: pulse 1.5s infinite; 
+            width: 280px;
+            margin: 8px 0;
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
-        .start-btn:active { transform: scale(0.92); }
+        .start-btn:active, .diff-btn:active { transform: scale(0.92); }
+
+        .diff-btn {
+            background: linear-gradient(145deg, #4fc3f7, #ff1493);
+            font-size: 19px;
+            line-height: 1.3;
+        }
+        .diff-btn small {
+            font-size: 13px;
+            opacity: 0.9;
+            display: block;
+            margin-top: 4px;
+        }
 
         #viewport { 
             flex: 1;
@@ -260,7 +274,25 @@
             <h1 class="logo-main">SFWDOOM</h1>
             <p class="logo-sub">Plushie Quest Pro</p>
         </div>
-        <button class="start-btn" onclick="startGame()">ENTER THE FOREST</button>
+        
+        <div style="text-align:center; margin-bottom: 30px; width: 100%; max-width: 340px;">
+            <h2 style="color:#ff69b4; margin: 0 0 20px 0; font-size: 22px; text-shadow: 0 0 15px var(--hot-pink);">CHOOSE YOUR SLEEPINESS LEVEL</h2>
+            
+            <button onclick="selectDifficulty(1.0)" class="diff-btn">
+                I'm Not Even Tired<br>
+                <small>Easy • 1 damage • 1.0× health • 1× enemies</small>
+            </button>
+            
+            <button onclick="selectDifficulty(1.5)" class="diff-btn" style="background: var(--hot-pink); animation: pulse 1.8s infinite;">
+                A Little Eepy<br>
+                <small>Normal • 2 damage • 1.5× health • 2× enemies</small>
+            </button>
+            
+            <button onclick="selectDifficulty(2.0)" class="diff-btn" style="background: #9c1f5f;">
+                Naptime<br>
+                <small>Hard • 3 damage • 2.0× health • 3× enemies</small>
+            </button>
+        </div>
     </div>
 
     <div id="viewport">
@@ -369,7 +401,8 @@ const MAPS = [
 let levelIdx = 0, player, sprites = [], projectiles = [], particles = [], keys = {}, zBuf = new Array(400);
 let gameActive = false, attackAnim = 0, shake = 0, bob = 0, isMoving = false, isLoading = false, maxMultSeen = 1;
 let levelTransitioning = false, portalActive = false;  
-let hitFlash = 0; // New Feedback loop variable
+let hitFlash = 0;
+let difficultyMult = 1.5;
 
 let joyActive = false, joyForward = 0, joyTurn = 0, currentJoyX = 0, currentJoyY = 0;
 const JOY_RADIUS = 60;
@@ -380,12 +413,19 @@ let joyPointerId = null;
 let turnActive = false, lastTurnClientX = 0, turnPointerId = null;
 const viewportEl = document.getElementById('viewport');
 
-function startGame() {
+function selectDifficulty(mult) {
+    difficultyMult = mult;
     document.getElementById('start-menu').style.display = 'none';
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     initGame();
-    loop();
+}
+
+function returnToMenu() {
+    gameActive = false;
+    sprites = []; projectiles = []; particles = [];
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('start-menu').style.display = 'flex';
 }
 
 function initGame() {
@@ -403,8 +443,78 @@ function loadLevel(idx) {
     levelIdx = idx; const l = MAPS[idx];
     player.x = l.start[0]; player.y = l.start[1];
     portalActive = false;  
-    sprites = (l.enemies || []).map(e => ({...e, hp: 3, alive: true, lastShot: Date.now() + 2000, atkTimer: 0}));
-    if (l.boss) sprites.push({...l.boss, hp: 12, alive: true, type: 'boss', lastShot: Date.now(), atkTimer: 0, strafeDir: 1, strafeTimer: 0});
+
+    const qtyMult = difficultyMult === 1.0 ? 1 : (difficultyMult === 1.5 ? 2 : 3);
+    sprites = [];
+
+    const mapData = l.m;
+    let floorTiles = [];
+    for (let y = 0; y < mapData.length; y++) {
+        for (let x = 0; x < mapData[y].length; x++) {
+            if (mapData[y][x] === 0) {
+                floorTiles.push({x: x + 0.5, y: y + 0.5});
+            }
+        }
+    }
+
+    function getRandomSpreadPosition(excludeList) {
+        if (floorTiles.length === 0) return {x: 2, y: 2};
+        let attempts = 0;
+        while (attempts < 50) {
+            const pos = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+            let tooClose = false;
+            for (let ex of excludeList) {
+                const dx = pos.x - ex.x;
+                const dy = pos.y - ex.y;
+                if (dx*dx + dy*dy < 2.8) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (!tooClose) return {x: pos.x, y: pos.y};
+            attempts++;
+        }
+        return floorTiles[Math.floor(Math.random() * floorTiles.length)];
+    }
+
+    (l.enemies || []).forEach(original => {
+        if (original.pickup) {
+            sprites.push({...original, alive: true});
+            return;
+        }
+        const placedPositions = [];
+        for (let i = 0; i < qtyMult; i++) {
+            const spawnPos = i === 0 
+                ? {x: original.x, y: original.y}
+                : getRandomSpreadPosition(placedPositions);
+
+            placedPositions.push(spawnPos);
+
+            sprites.push({
+                ...original,
+                x: spawnPos.x,
+                y: spawnPos.y,
+                hp: Math.round(3 * difficultyMult),
+                alive: true,
+                lastShot: Date.now() + 2000 + Math.random() * 1200,
+                atkTimer: 0
+            });
+        }
+    });
+
+    if (l.boss) {
+        sprites.push({
+            ...l.boss, 
+            hp: Math.round(12 * difficultyMult), 
+            alive: true, 
+            type: 'boss', 
+            lastShot: Date.now(), 
+            atkTimer: 0, 
+            strafeDir: 1, 
+            strafeTimer: 0
+        });
+    }
+    
     projectiles = []; particles = [];
     showLevelCard(l.n, l.isSecret ? "SECRET FOUND!" : "LEVEL " + (idx + 1));
     setTimeout(() => { isLoading = false; levelTransitioning = false; }, 500);
@@ -484,7 +594,7 @@ function doBoop() {
         while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
         if (s.alive && d < 6 && angleDiff < 0.85 && !s.pickup) {
             s.hp--;
-            hitFlash = 1.0; // TRIGGER HIT FEEDBACK
+            hitFlash = 1.0;
             playSound('triangle', 520, 95, 0.19);
             player.combo = Math.min(100, player.combo + 28);
             spawnParticles(s.x, s.y, "✨", 6);
@@ -547,7 +657,7 @@ function showEnd(msg) {
     };
 }
 
-document.getElementById('retry-btn').onclick = initGame;
+document.getElementById('retry-btn').onclick = returnToMenu;
 
 function update() {
     if (!gameActive || isLoading) return;
@@ -593,7 +703,7 @@ function update() {
     player.mult = Math.floor(player.combo / 20) + 1;
     if (player.mult > maxMultSeen) maxMultSeen = player.mult;
 
-    document.getElementById('hp-display').innerText = `❤️ x${player.hp}`;
+    document.getElementById('hp-display').innerText = `❤️ x${Math.max(0, Math.floor(player.hp))}`;
     document.getElementById('score-display').innerText = `✨ ${Math.floor(player.score)}`;
     document.getElementById('hi-display').innerText = `🏆 ${localStorage.getItem('sfwDoomHiScore') || 0}`;
     document.getElementById('mult-display').innerText = `x${player.mult}`;
@@ -629,7 +739,10 @@ function update() {
     projectiles.forEach((p, i) => {
         p.x += p.vx; p.y += p.vy; p.l--;
         if (Math.sqrt((p.x-player.x)**2 + (p.y-player.y)**2) < 0.45) {
-            player.hp--; player.combo = 0; shake = 1.1;
+            // CLEARER INTEGER DAMAGE SO YOU FEEL THE DIFFERENCE
+            const damage = difficultyMult === 1.0 ? 1 : (difficultyMult === 1.5 ? 2 : 3);
+            player.hp -= damage;
+            player.combo = 0; shake = 1.1;
             playSound('triangle', 410, 135, 0.23, -110);
             if (player.hp <= 0) showEnd("BOOPED! 🧸");
             projectiles.splice(i, 1);
@@ -664,7 +777,6 @@ function draw() {
 
     const map = MAPS[levelIdx].m; const tex = MAPS[levelIdx].tex;
 
-    // --- DDA OPTIMIZED RAYCASTING & FISH-EYE FIX ---
     const FOV = 0.66;
     for (let i = 0; i < 400; i++) {
         let cameraX = 2 * i / 400 - 1;
@@ -706,7 +818,7 @@ function draw() {
         let ang = Math.atan2(dy, dx) - player.dir;
         while (ang < -Math.PI) ang += Math.PI*2; while (ang > Math.PI) ang -= Math.PI*2;
         if (Math.abs(ang) < 0.8) {
-            let sx = (ang / 1.2 + 0.5) * 400; // Adjusted for FOV
+            let sx = (ang / 1.2 + 0.5) * 400;
             if (zBuf[Math.floor(sx)] > dist) {
                 let sz = 300 / Math.max(dist, 0.25) * (s.scale || (s.type === 'boss' ? 2.6 : 1));
                 ctx.globalAlpha = s.l || 1;
@@ -721,7 +833,6 @@ function draw() {
         }
     });
 
-    // --- HIT FLASH FEEDBACK ---
     if (hitFlash > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${hitFlash * 0.3})`;
         ctx.fillRect(0, 0, 400, 300);
@@ -749,7 +860,16 @@ function drawMinimap() {
     mCtx.fillStyle = "#44ff88"; mCtx.beginPath(); mCtx.arc(player.x*cw, player.y*ch, 3.5, 0, Math.PI*2); mCtx.fill();
 }
 
-function loop() { if(gameActive) { update(); draw(); } requestAnimationFrame(loop); }
+function loop() {
+    if (gameActive) {
+        update();
+        draw();
+    }
+    requestAnimationFrame(loop);
+}
+
+loop();
+
 window.addEventListener('resize', () => { document.documentElement.style.height = '100dvh'; });
 </script>
 </body>
