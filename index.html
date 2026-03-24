@@ -138,7 +138,42 @@
         }
         #player-face { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
-        /* Utility Buttons for Pause and Fullscreen */
+        /* Boss Health Bar Styles */
+        #boss-hud {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 260px;
+            z-index: 25;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #boss-name {
+            color: white;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--hot-pink);
+            margin-bottom: 4px;
+        }
+        #boss-bar-bg {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid var(--hot-pink);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+        #boss-bar-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #9c1f5f, var(--hot-pink));
+            transition: width 0.3s ease-out;
+        }
+
         .util-btn {
             position: absolute;
             top: 10px;
@@ -279,39 +314,21 @@
         #share-btn { background: var(--sky); box-shadow: 0 0 20px var(--sky); }
         #retry-btn, #resume-btn { background: var(--hot-pink); box-shadow: 0 0 20px var(--hot-pink); }
 
-        /* LANDSCAPE FIX FOR MOBILE MENU */
         @media (orientation: landscape) and (max-height: 450px) {
-            #start-menu {
-                padding: 10px;
-                justify-content: flex-start;
-            }
+            #start-menu { padding: 10px; justify-content: flex-start; }
             .logo-container { margin-bottom: 8px; }
             .logo-main { font-size: 34px; }
             .logo-sub { font-size: 12px; letter-spacing: 3px; }
             #start-menu h2 { font-size: 16px !important; margin: 0 0 10px 0 !important; }
-            #start-menu div[style*="text-align:center"] {
-                display: flex;
-                flex-direction: row;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 10px;
-                max-width: 95% !important;
-                margin-bottom: 10px !important;
-            }
-            .diff-btn {
-                width: 180px;
-                padding: 10px 15px;
-                font-size: 14px;
-                margin: 0;
-            }
+            .diff-btn { width: 180px; padding: 10px 15px; font-size: 14px; margin: 0; }
             .diff-btn small { display: none; }
-            
             #top-hud-overlay { top: 8px; padding: 6px 12px; }
             #joystick-container { width: 138px; height: 138px; }
             #joystick-knob { width: 54px; height: 54px; }
             #btn-boop { width: 88px; height: 88px; font-size: 13px; }
             #bottom-controls-overlay { padding: 0 14px 6px; }
             #controls { max-width: none; }
+            #boss-hud { top: 55px; width: 200px; }
         }
     </style>
 </head>
@@ -350,8 +367,16 @@
         <div id="vignette"></div>
         <div id="level-card"><p id="level-num"></p><h2 id="level-name"></h2></div>
         <div id="minimap-container"><canvas id="m-canvas"></canvas></div>
+        
         <div id="face-hud">
             <img id="player-face" src="https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/mainface.png" alt="Status">
+        </div>
+
+        <div id="boss-hud">
+            <div id="boss-name">BIG PLUSHIE BOSS</div>
+            <div id="boss-bar-bg">
+                <div id="boss-bar-fill"></div>
+            </div>
         </div>
 
         <div id="top-hud-overlay">
@@ -486,10 +511,8 @@ function togglePause() {
 function toggleFullscreen() {
     const doc = window.document;
     const docEl = doc.documentElement;
-
     const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
     const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
     if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
         requestFullScreen.call(docEl);
     } else {
@@ -590,9 +613,11 @@ function loadLevel(idx) {
     });
 
     if (l.boss) {
+        const bossMaxHp = Math.round(12 * difficultyMult);
         sprites.push({
             ...l.boss, 
-            hp: Math.round(12 * difficultyMult), 
+            hp: bossMaxHp,
+            maxHp: bossMaxHp, // Track max HP for health bar
             alive: true, 
             type: 'boss', 
             lastShot: Date.now(), 
@@ -807,6 +832,19 @@ function update() {
                   hpP > 50 ? 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_k7jgubk7jgubk7jg-Photoroom.png' :
                   hpP > 25 ? 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_oo1o3too1o3too1o-Photoroom.png' :
                                'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/Gemini_Generated_Image_zh1zaqzh1zaqzh1z-Photoroom.png';
+
+    // Handle Boss HUD Logic
+    const activeBoss = sprites.find(s => s.type === 'boss' && s.alive);
+    const bossHud = document.getElementById('boss-hud');
+    const bossBarFill = document.getElementById('boss-bar-fill');
+    
+    if (activeBoss) {
+        bossHud.style.display = 'flex';
+        const bossHpPct = (activeBoss.hp / activeBoss.maxHp) * 100;
+        bossBarFill.style.width = bossHpPct + "%";
+    } else {
+        bossHud.style.display = 'none';
+    }
 
     sprites.forEach(s => {
         if (!s.alive) return;
