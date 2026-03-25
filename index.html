@@ -500,7 +500,7 @@ const assets = {
     smallIdle: new Image(), smallAtk: new Image(),
     predIdle: new Image(), predAtk: new Image(),
     elephantIdle: new Image(), elephantAtk: new Image(),
-    bossIdle: new Image(), bossAtk: new Image(),
+    bossIdle: new Image(), bossAtk: new Image(), bossPhase2: new Image(),
     wall1: new Image(), wall2: new Image(), wall3: new Image(),
     portal: new Image()
 };
@@ -515,6 +515,7 @@ assets.elephantIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/ref
 assets.elephantAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/imag69.png';
 assets.bossIdle.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image70.png';
 assets.bossAtk.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image71.png';
+assets.bossPhase2.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/image0-14.png';
 assets.wall1.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall2.jpg';
 assets.wall2.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall%20area%201.png';
 assets.wall3.src = 'https://raw.githubusercontent.com/sfwdoom/SFWDOOM/refs/heads/photos/wall3.jpg';
@@ -936,13 +937,35 @@ function update() {
         if (s.atkTimer > 0) s.atkTimer -= 16;
         let d = Math.sqrt((s.x-player.x)**2 + (s.y-player.y)**2);
         if (s.pickup && d < 0.6) { s.alive = false; player.hp = Math.min(45, player.hp + 5); playSound('sine', 1180, 55, 0.27); checkWin(); }
+        
         if (s.type === 'boss') {
-            s.strafeTimer++; if (s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
-            let sy = s.y + (s.strafeDir * 0.038); if (canMove(s.x, sy)) s.y = sy;
-            if (d < 12 && Date.now() - s.lastShot > 1900) {
-                let a = Math.atan2(player.y-s.y, player.x-s.x);
-                projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*0.095, vy:Math.sin(a)*0.095, l:150});
-                s.lastShot = Date.now(); s.atkTimer = 480;
+            if (!s.isPhase2 && s.hp <= s.maxHp / 2) {
+                s.isPhase2 = true;
+                s.phase2StartTime = Date.now();
+                playSound('sine', 150, 1000, 0.4, 600); 
+            }
+
+            if (s.isPhase2) {
+                let chargeTime = Date.now() - s.phase2StartTime;
+                
+                if (Math.random() < 0.3) {
+                    spawnParticles(s.x + (Math.random()-0.5), s.y + (Math.random()-0.5), "⚡", 1);
+                }
+
+                if (chargeTime >= 5000) {
+                    player.hp = 0;
+                    shake = 2.0;
+                    playSound('triangle', 100, 600, 0.5, -100);
+                    showEnd("MEGA BOOPED! 🧸⚡");
+                }
+            } else {
+                s.strafeTimer++; if (s.strafeTimer > 60) { s.strafeDir *= -1; s.strafeTimer = 0; }
+                let sy = s.y + (s.strafeDir * 0.038); if (canMove(s.x, sy)) s.y = sy;
+                if (d < 12 && Date.now() - s.lastShot > 1900) {
+                    let a = Math.atan2(player.y-s.y, player.x-s.x);
+                    projectiles.push({x:s.x, y:s.y, vx:Math.cos(a)*0.095, vy:Math.sin(a)*0.095, l:150});
+                    s.lastShot = Date.now(); s.atkTimer = 480;
+                }
             }
         } else if (!s.pickup && d < 8 && Date.now() - s.lastShot > 3900) {
             let a = Math.atan2(player.y-s.y, player.x-s.x);
@@ -1040,7 +1063,19 @@ function draw() {
                 else if (s.e === "SMALL") ctx.drawImage(s.atkTimer > 0 ? assets.smallAtk : assets.smallIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "PRED") ctx.drawImage(s.atkTimer > 0 ? assets.predAtk : assets.predIdle, sx - sz/2, 150 - sz/2, sz, sz);
                 else if (s.e === "🐘") ctx.drawImage(s.atkTimer > 0 ? assets.elephantAtk : assets.elephantIdle, sx - sz/2, 150 - sz/2, sz, sz);
-                else if (s.e === "BOSS_FINAL") ctx.drawImage(s.atkTimer > 0 ? assets.bossAtk : assets.bossIdle, sx - sz/2, 150 - sz/2, sz, sz);
+                else if (s.e === "BOSS_FINAL") {
+                    let bossImg = assets.bossIdle;
+                    let sxOffset = 0;
+                    
+                    if (s.isPhase2) {
+                        bossImg = assets.bossPhase2;
+                        sxOffset = (Math.random() - 0.5) * 8; 
+                    } else if (s.atkTimer > 0) {
+                        bossImg = assets.bossAtk;
+                    }
+                    
+                    ctx.drawImage(bossImg, (sx + sxOffset) - sz/2, 150 - sz/2, sz, sz);
+                }
                 else { ctx.font = `${sz}px serif`; ctx.textAlign = "center"; ctx.fillText(s.e || "✨", sx, 150 + sz/2); }
                 ctx.globalAlpha = 1;
             }
