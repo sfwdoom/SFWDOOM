@@ -1,4 +1,4 @@
-## SFWDOOM: Plushie Edition 🪄💖
+## Plushie Quest 🪄💖
 
 Welcome to the softest, most wholesome demon-booping experience ever created. SFWDOOM: Plushie Edition reimagines the classic fast-paced action of the 90s through a lens of cotton candy, marshmallow clouds, and magical friendship.
 
